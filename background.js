@@ -13,10 +13,10 @@ function matchChannelName(url) {
   if (!url)
     return undefined;
 
-  const match = url.match(/^https?:\/\/(www\.)?twitch.tv\/([a-zA-Z0-9_]+)\/?$/);
+  const match = url.match(/^https?:\/\/(?:www\.)?twitch.tv\/([a-zA-Z0-9_]+)\/?(?:\?.*)?$/);
 
   let channelName;
-  if (match && (channelName = match[2], !ignoredPages[channelName])) {
+  if (match && (channelName = match[1], !ignoredPages[channelName])) {
     return channelName;
   }
 

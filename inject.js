@@ -17,6 +17,21 @@
     "directory": true,
   };
 
+  // return channel name if it should contain a chat or undefined
+  function matchChannelName(url) {
+    if (!url)
+      return undefined;
+
+    const match = url.match(/^https?:\/\/(?:www\.)?twitch.tv\/([a-zA-Z0-9_]+)\/?(?:\?.*)?$/);
+
+    let channelName;
+    if (match && (channelName = match[1], !ignoredPages[channelName])) {
+      return channelName;
+    }
+
+    return undefined;
+  }
+
   let findChatDiv = () => document.getElementsByClassName("right-column")[0];
   let findRightCollapse = () => document.getElementsByClassName("right-column__toggle-visibility")[0];
   let findRightColumn = () => document.getElementsByClassName("channel-page__right-column")[0];
@@ -167,22 +182,6 @@
     console.log("queryCharRect " + (t2 - t1) + "ms");
     // setTimeout(queryCharRectLoop, 500);
   }
-
-  // return channel name if it should contain a chat or undefined
-  function matchChannelName(url) {
-    if (!url)
-      return undefined;
-
-    const match = url.match(/^https?:\/\/(www\.)?twitch.tv\/([a-zA-Z0-9_]+)\/?$/);
-
-    let channelName;
-    if (match && (channelName = match[2], !ignoredPages[channelName])) {
-      return channelName;
-    }
-
-    return undefined;
-  }
-
 
   // event listeners
   window.addEventListener("load", () => setTimeout(queryChatRect, 1000));
