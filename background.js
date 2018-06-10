@@ -1,19 +1,19 @@
 const ignoredPages = {
-  "settings": true,
-  "payments": true,
-  "inventory": true,
-  "messages": true,
-  "subscriptions": true,
-  "friends": true,
-  "directory": true,
+  'settings': true,
+  'payments': true,
+  'inventory': true,
+  'messages': true,
+  'subscriptions': true,
+  'friends': true,
+  'directory': true,
 };
 
 /// return channel name if it should contain a chat
 function matchChannelName(url) {
-  if (!url)
-    return undefined;
+  if (!url) return undefined;
 
-  const match = url.match(/^https?:\/\/(?:www\.)?twitch.tv\/([a-zA-Z0-9_]+)\/?(?:\?.*)?$/);
+  const match = url.match(
+      /^https?:\/\/(?:www\.)?twitch.tv\/([a-zA-Z0-9_]+)\/?(?:\?.*)?$/);
 
   let channelName;
   if (match && (channelName = match[1], !ignoredPages[channelName])) {
@@ -23,8 +23,7 @@ function matchChannelName(url) {
   return undefined;
 }
 
-
-const appName = "com.chatterino.chatterino";
+const appName = 'com.chatterino.chatterino';
 let port = null;
 
 // gets the port for communication with chatterino
@@ -39,30 +38,29 @@ function getPort() {
   }
 }
 
-/// connect to port
+// connect to port
 function connectPort() {
   port = chrome.runtime.connectNative(appName);
-  console.log("port connected");
+  console.log('port connected');
   let connected = true;
 
-  port.onMessage.addListener(function (msg) {
+  port.onMessage.addListener((msg) => {
     console.log(msg);
   });
-  port.onDisconnect.addListener(function () {
-    console.log("port disconnected");
+  port.onDisconnect.addListener(() => {
+    console.log('port disconnected');
 
     port = null;
   });
 
   let sendPing = () => {
     if (connected) {
-      port.postMessage({ ping: true });
+      port.postMessage({ping: true});
     } else {
       setTimeout(sendPing, 5000);
     }
   }
 }
-
 
 // tab activated
 chrome.tabs.onActivated.addListener((activeInfo) => {
@@ -72,12 +70,12 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
     chrome.windows.get(tab.windowId, {}, (window) => {
       if (!window.focused) return;
 
-      if (window.state == "fullscreen") {
+      if (window.state == 'fullscreen') {
         tryDetach(tab.windowId);
         return;
       }
 
-      console.log("onActivated");
+      console.log('onActivated');
       onTabSelected(tab.url, tab);
     });
   });
@@ -85,30 +83,29 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
 
 // url changed
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (!tab.highlighted)
-    return;
+  if (!tab.highlighted) return;
 
   chrome.windows.get(tab.windowId, {}, (window) => {
     if (!window.focused) return;
-    if (window.state == "fullscreen") {
+    if (window.state == 'fullscreen') {
       tryDetach(tab.windowId);
       return;
     }
 
-    console.log("onUpdated");
+    console.log('onUpdated');
     onTabSelected(tab.url, tab);
   });
 });
 
 // tab detached
 chrome.tabs.onDetached.addListener((tabId, detachInfo) => {
-  console.log("onDetached");
+  console.log('onDetached');
   tryDetach(detachInfo.oldWindowId);
 });
 
 // tab closed
 chrome.windows.onRemoved.addListener((windowId) => {
-  console.log("onRemoved");
+  console.log('onRemoved');
   tryDetach(windowId);
 });
 
@@ -118,34 +115,35 @@ chrome.windows.onFocusChanged.addListener((windowId) => {
   if (windowId == -1) return;
 
   // this returns all tabs when the query fails
-  chrome.tabs.query({ windowId: windowId, highlighted: true }, (tabs) => {
+  chrome.tabs.query({windowId: windowId, highlighted: true}, (tabs) => {
     if (tabs.length === 1) {
       let tab = tabs[0];
 
       chrome.windows.get(tab.windowId, (window) => {
-        if (window.state == "fullscreen") {
+        if (window.state == 'fullscreen') {
           tryDetach(tab.windowId);
           return;
         }
 
-        console.log("onFocusChanged");
+        console.log('onFocusChanged');
         onTabSelected(tab.url, tab);
       });
     }
   });
 });
 
-
 // attach or detach from tab
 function onTabSelected(url, tab) {
   let channelName = matchChannelName(url);
 
   if (channelName) {
-    // chrome.windows.get(tab.windowId, {}, (window) => {
+    // chrome.windows.get(tab.windowId, {},
+    // (window) => {
     //   // attach to window
     //   tryAttach(tab.windowId, {
     //     name: channelName,
-    //     yOffset: window.height - tab.height,
+    //     yOffset: window.height -
+    //     tab.height,
     //   });
     // });
   } else {
@@ -164,7 +162,7 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
   // is window focused
   chrome.windows.get(sender.tab.windowId, {}, (window) => {
     if (!window.focused) return;
-    if (window.state == "fullscreen") {
+    if (window.state == 'fullscreen') {
       tryDetach(sender.tab.windowId);
       return;
     }
@@ -187,13 +185,12 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
   });
 });
 
-
 // attach chatterino to a chrome window
 function tryAttach(windowId, data) {
-  data.action = "select";
+  data.action = 'select';
   data.attach = true;
-  data.type = "twitch";
-  data.winId = "" + windowId;
+  data.type = 'twitch';
+  data.winId = '' + windowId;
 
   let port = getPort();
 
@@ -206,12 +203,9 @@ function tryAttach(windowId, data) {
 function tryDetach(windowId) {
   let port = getPort();
 
-  console.log("tryDetach");
+  console.log('tryDetach');
 
   if (port) {
-    port.postMessage({
-      action: "detach",
-      winId: "" + windowId
-    })
+    port.postMessage({action: 'detach', winId: '' + windowId})
   }
 }

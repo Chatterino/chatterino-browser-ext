@@ -8,21 +8,21 @@
   let popupChatLink = null;
 
   const ignoredPages = {
-    "settings": true,
-    "payments": true,
-    "inventory": true,
-    "messages": true,
-    "subscriptions": true,
-    "friends": true,
-    "directory": true,
+    'settings': true,
+    'payments': true,
+    'inventory': true,
+    'messages': true,
+    'subscriptions': true,
+    'friends': true,
+    'directory': true,
   };
 
   // return channel name if it should contain a chat or undefined
   function matchChannelName(url) {
-    if (!url)
-      return undefined;
+    if (!url) return undefined;
 
-    const match = url.match(/^https?:\/\/(?:www\.)?twitch.tv\/([a-zA-Z0-9_]+)\/?(?:\?.*)?$/);
+    const match = url.match(
+        /^https?:\/\/(?:www\.)?twitch.tv\/([a-zA-Z0-9_]+)\/?(?:\?.*)?$/);
 
     let channelName;
     if (match && (channelName = match[1], !ignoredPages[channelName])) {
@@ -32,20 +32,23 @@
     return undefined;
   }
 
-  let findChatDiv = () => document.getElementsByClassName("right-column")[0];
-  let findRightCollapse = () => document.getElementsByClassName("right-column__toggle-visibility")[0];
-  let findRightColumn = () => document.getElementsByClassName("channel-page__right-column")[0];
-  let findNavBar = () => document.getElementsByClassName("top-nav__menu")[0];
-  let findInfoBar = () => document.getElementsByClassName("channel-info-bar__action-container")[0];
+  let findChatDiv = () => document.getElementsByClassName('right-column')[0];
+  let findRightCollapse = () =>
+      document.getElementsByClassName('right-column__toggle-visibility')[0];
+  let findRightColumn = () =>
+      document.getElementsByClassName('channel-page__right-column')[0];
+  let findNavBar = () => document.getElementsByClassName('top-nav__menu')[0];
+  let findInfoBar = () =>
+      document.getElementsByClassName('channel-info-bar__action-container')[0];
 
   // logging function
   function log(str) {
-    console.log("Chatterino Native: " + str);
+    console.log('Chatterino Native: ' + str);
   }
 
   // install events
   function installChatterino() {
-    log("trying to install events");
+    log('trying to install events');
 
     let retry = false;
 
@@ -58,11 +61,11 @@
       if (x != undefined) {
         rightCollapseButton = x;
 
-        x.addEventListener("click", () => {
+        x.addEventListener('click', () => {
           let y = findChatDiv();
 
           if (parseInt(y.style.width) == 0) {
-            y.style.width = "340px";
+            y.style.width = '340px';
             isCollapsed = false;
           } else {
             y.style.width = 0;
@@ -79,9 +82,10 @@
       let x = findChatDiv();
 
       if (x != undefined && x.children.length >= 2) {
-        x.children[0].innerHTML = "<div style='width: 340px; height: 100%; justify-content: center; display: flex; flex-direction: column; text-align: center; color: #999; user-select: none; background: #222;'>" +
-          "Disconnected from the chatterino extension.<br><br>Please focus the window or refresh the page." +
-          "</div>";
+        x.children[0].innerHTML =
+            '<div style=\'width: 340px; height: 100%; justify-content: center; display: flex; flex-direction: column; text-align: center; color: #999; user-select: none; background: #222;\'>' +
+            'Disconnected from the chatterino extension.<br><br>Please focus the window or refresh the page.' +
+            '</div>';
 
         installedObjects.rightColumn = true;
       } else {
@@ -94,10 +98,10 @@
       if (rightCollapseButton) {
         let x = findNavBar();
 
-        x.addEventListener("mouseup", () => {
+        x.addEventListener('mouseup', () => {
           console.log(isCollapsed)
 
-          if (!isCollapsed) {
+              if (!isCollapsed) {
             let collapse = findRightCollapse();
             collapse.click();
           }
@@ -114,11 +118,13 @@
       let x = findInfoBar();
 
       if (x != undefined) {
-        let link = document.createElement("a");
-        link.href = "/popout/" + matchChannelName(window.location.href) + "/chat";
-        link.target = "_blank";
-        link.style.margin = "0 16px";
-        link.appendChild(document.createTextNode("Open popup chat (for resubs)"));
+        let link = document.createElement('a');
+        link.href =
+            '/popout/' + matchChannelName(window.location.href) + '/chat';
+        link.target = '_blank';
+        link.style.margin = '0 16px';
+        link.appendChild(
+            document.createTextNode('Open popup chat (for resubs)'));
 
         x.appendChild(link);
 
@@ -133,7 +139,7 @@
     if (retry) {
       setTimeout(installChatterino, 1000);
     } else {
-      log("installed all events");
+      log('installed all events');
     }
   }
 
@@ -144,7 +150,7 @@
     let element = findChatDiv();
 
     if (element === undefined) {
-      log("failed to find chat div");
+      log('failed to find chat div');
       return;
     }
 
@@ -170,8 +176,8 @@
     try {
       chrome.runtime.sendMessage(data);
     } catch {
-      // failed to send a message to the runtime -> maybe the extension got reloaded
-      // alert("reload the page to re-enable chatterino native");
+      // failed to send a message to the runtime -> maybe the extension got
+      // reloaded alert("reload the page to re-enable chatterino native");
     }
   }
 
@@ -179,22 +185,22 @@
     let t1 = performance.now();
     queryChatRect();
     let t2 = performance.now();
-    console.log("queryCharRect " + (t2 - t1) + "ms");
+    console.log('queryCharRect ' + (t2 - t1) + 'ms');
     // setTimeout(queryCharRectLoop, 500);
   }
 
   // event listeners
-  window.addEventListener("load", () => setTimeout(queryChatRect, 1000));
-  window.addEventListener("resize", queryChatRect);
-  window.addEventListener("focus", queryChatRect);
-  window.addEventListener("mouseup", () => setTimeout(queryChatRect, 10));
-  window.addEventListener("hashchange", () => {
+  window.addEventListener('load', () => setTimeout(queryChatRect, 1000));
+  window.addEventListener('resize', queryChatRect);
+  window.addEventListener('focus', queryChatRect);
+  window.addEventListener('mouseup', () => setTimeout(queryChatRect, 10));
+  window.addEventListener('hashchange', () => {
     installedObjects = {};
     installChatterino();
   });
 
   //
-  log("hello there in the dev tools 👋");
+  log('hello there in the dev tools 👋');
 
   queryChatRectLoop();
   installChatterino();
