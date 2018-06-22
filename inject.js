@@ -6,6 +6,7 @@
   let rightCollapseButton = null;
   let isCollapsed = false;
   let popupChatLink = null;
+  let errorDiv = null;
 
   const ignoredPages = {
     'settings': true,
@@ -16,6 +17,8 @@
     'friends': true,
     'directory': true,
   };
+
+  let errors = {};
 
   // return channel name if it should contain a chat or undefined
   function matchChannelName(url) {
@@ -83,9 +86,10 @@
 
       if (x != undefined && x.children.length >= 2) {
         x.children[0].innerHTML =
-            '<div style=\'width: 340px; height: 100%; justify-content: center; display: flex; flex-direction: column; text-align: center; color: #999; user-select: none; background: #222;\'>' +
-            'Disconnected from the chatterino extension.<br><br>Please focus the window or refresh the page.' +
-            '</div>';
+            '<div style="width: 340px; height: 100%; justify-content: center; display: flex; flex-direction: column; text-align: center; color: #999; user-select: none; background: #222;"></div>';
+
+        errorDiv = x.children[0].children[0];
+        updateErrors();
 
         installedObjects.rightColumn = true;
       } else {
@@ -99,9 +103,9 @@
         let x = findNavBar();
 
         x.addEventListener('mouseup', () => {
-          console.log(isCollapsed)
+          console.log(isCollapsed);
 
-              if (!isCollapsed) {
+          if (!isCollapsed) {
             let collapse = findRightCollapse();
             collapse.click();
           }
@@ -168,25 +172,38 @@
     lastRect = rect;
 
     let data = {
-      rect: rect,
+      rect: {x: rect.x, y: rect.y, width: rect.width, height: rect.height},
     };
 
     isCollapsed = rect.width == 0;
 
     try {
+      // chrome.runtime.sendMessage('NaM');
       chrome.runtime.sendMessage(data);
+      console.log(data);
     } catch {
-      // failed to send a message to the runtime -> maybe the extension got
-      // reloaded alert("reload the page to re-enable chatterino native");
+      errors.sendMessage = true;
+      updateErrors();
     }
   }
 
   function queryChatRectLoop() {
-    let t1 = performance.now();
     queryChatRect();
-    let t2 = performance.now();
-    console.log('queryCharRect ' + (t2 - t1) + 'ms');
     // setTimeout(queryCharRectLoop, 500);
+  }
+
+  function updateErrors() {
+    if (!errorDiv) return;
+
+    if (errors.sendMessage) {
+      errorDiv.innerHTML =
+          'The website lost connection to the chatterino extension.<br><br>' +
+          'Please reload the page.';
+    } else {
+      errorDiv.innerHTML =
+          'The extension could not connect to chatterino.<br><br>' +
+          'Please focus the window or refresh the page.';
+    }
   }
 
   // event listeners

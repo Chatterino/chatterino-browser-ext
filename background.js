@@ -47,8 +47,9 @@ function connectPort() {
   port.onMessage.addListener((msg) => {
     console.log(msg);
   });
-  port.onDisconnect.addListener(() => {
+  port.onDisconnect.addListener((xd) => {
     console.log('port disconnected');
+    console.log((xd | {}).error);
 
     port = null;
   });
@@ -137,15 +138,14 @@ function onTabSelected(url, tab) {
   let channelName = matchChannelName(url);
 
   if (channelName) {
-    // chrome.windows.get(tab.windowId, {},
-    // (window) => {
-    //   // attach to window
-    //   tryAttach(tab.windowId, {
-    //     name: channelName,
-    //     yOffset: window.height -
-    //     tab.height,
-    //   });
-    // });
+    // chrome.windows.get(tab.windowId, {}, (window)
+    // => {
+    //  // attach to window
+    //  tryAttach(tab.windowId, {
+    //    name: channelName,
+    //    yOffset: window.height - tab.height,
+    //  });
+    //});
   } else {
     // detach from window
     tryDetach(tab.windowId);
@@ -187,6 +187,8 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
 
 // attach chatterino to a chrome window
 function tryAttach(windowId, data) {
+  console.log('tryAttach');
+
   data.action = 'select';
   data.attach = true;
   data.type = 'twitch';
@@ -201,9 +203,9 @@ function tryAttach(windowId, data) {
 
 // detach chatterino from a chrome window
 function tryDetach(windowId) {
-  let port = getPort();
-
   console.log('tryDetach');
+
+  let port = getPort();
 
   if (port) {
     port.postMessage({action: 'detach', winId: '' + windowId})
