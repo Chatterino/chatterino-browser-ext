@@ -193,6 +193,7 @@ function tryAttach(windowId, data) {
   data.attach = true;
   data.type = 'twitch';
   data.winId = '' + windowId;
+  data.version = 0;
 
   let port = getPort();
 
@@ -208,6 +209,6 @@ function tryDetach(windowId) {
   let port = getPort();
 
   if (port) {
-    port.postMessage({action: 'detach', winId: '' + windowId})
+    port.postMessage({action: 'detach', version: 0, winId: '' + windowId})
   }
 }
