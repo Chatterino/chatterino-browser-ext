@@ -103,8 +103,6 @@
         let x = findNavBar();
 
         x.addEventListener('mouseup', () => {
-          console.log(isCollapsed);
-
           if (!isCollapsed) {
             let collapse = findRightCollapse();
             collapse.click();
@@ -123,8 +121,6 @@
 
       if (x != undefined) {
         let link = document.createElement('a');
-        link.href =
-            '/popout/' + matchChannelName(window.location.href) + '/chat';
         link.target = '_blank';
         link.style.margin = '0 16px';
         link.appendChild(
@@ -133,6 +129,7 @@
         x.appendChild(link);
 
         popupChatLink = link;
+        updatePopupChatLink();
         installedObjects.infoBar = true;
       } else {
         retry = true;
@@ -178,9 +175,7 @@
     isCollapsed = rect.width == 0;
 
     try {
-      // chrome.runtime.sendMessage('NaM');
       chrome.runtime.sendMessage(data);
-      console.log(data);
     } catch {
       errors.sendMessage = true;
       updateErrors();
@@ -206,6 +201,13 @@
     }
   }
 
+  function updatePopupChatLink() {
+    if (popupChatLink !== null) {
+      popupChatLink.href =
+          '/popout/' + matchChannelName(window.location.href) + '/chat';
+    }
+  }
+
   // event listeners
   window.addEventListener('load', () => setTimeout(queryChatRect, 1000));
   window.addEventListener('resize', queryChatRect);
@@ -214,6 +216,7 @@
   window.addEventListener('hashchange', () => {
     installedObjects = {};
     installChatterino();
+    updatePopupChatLink();
   });
 
   //

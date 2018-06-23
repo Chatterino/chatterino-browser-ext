@@ -154,7 +154,7 @@ function onTabSelected(url, tab) {
 
 // receiving messages from the inject script
 chrome.runtime.onMessage.addListener((message, sender, callback) => {
-  console.log(message);
+  // console.log(message);
 
   // is tab highlighted
   if (!sender.tab.highlighted) return;
@@ -187,7 +187,7 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
 
 // attach chatterino to a chrome window
 function tryAttach(windowId, data) {
-  console.log('tryAttach');
+  // console.log('tryAttach');
 
   data.action = 'select';
   data.attach = true;
@@ -204,7 +204,7 @@ function tryAttach(windowId, data) {
 
 // detach chatterino from a chrome window
 function tryDetach(windowId) {
-  console.log('tryDetach');
+  // console.log('tryDetach');
 
   let port = getPort();
 
