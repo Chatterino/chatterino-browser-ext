@@ -1,5 +1,5 @@
 {
-  "name": "Chatterino",
+  "name": "Chatterino Native Host",
   "version": "1.0",
   "description": "Replaces the chat on Twitch.tv with Chatterino.",
   "permissions": [

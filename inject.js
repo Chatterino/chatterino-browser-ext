@@ -176,7 +176,7 @@
 
     try {
       chrome.runtime.sendMessage(data);
-    } catch {
+    } catch (err) {
       errors.sendMessage = true;
       updateErrors();
     }
