@@ -33,7 +33,8 @@
       ],
       "exclude_matches": [
         "https://www.twitch.tv/videos/*",
-        "https://www.twitch.tv/*/clip/*"
+        "https://www.twitch.tv/*/clip/*",
+        "https://www.twitch.tv/prime"
       ],
       "js": [
         "inject.js"
