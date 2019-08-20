@@ -71,11 +71,6 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
     chrome.windows.get(tab.windowId, {}, (window) => {
       if (!window.focused) return;
 
-      if (window.state == 'fullscreen') {
-        tryDetach(tab.windowId);
-        return;
-      }
-
       console.log('onActivated');
       onTabSelected(tab.url, tab);
     });
@@ -88,10 +83,6 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
   chrome.windows.get(tab.windowId, {}, (window) => {
     if (!window.focused) return;
-    if (window.state == 'fullscreen') {
-      tryDetach(tab.windowId);
-      return;
-    }
 
     console.log('onUpdated');
     onTabSelected(tab.url, tab);
@@ -121,11 +112,6 @@ chrome.windows.onFocusChanged.addListener((windowId) => {
       let tab = tabs[0];
 
       chrome.windows.get(tab.windowId, (window) => {
-        if (window.state == 'fullscreen') {
-          tryDetach(tab.windowId);
-          return;
-        }
-
         console.log('onFocusChanged');
         onTabSelected(tab.url, tab);
       });
@@ -137,16 +123,7 @@ chrome.windows.onFocusChanged.addListener((windowId) => {
 function onTabSelected(url, tab) {
   let channelName = matchChannelName(url);
 
-  if (channelName) {
-    // chrome.windows.get(tab.windowId, {}, (window)
-    // => {
-    //  // attach to window
-    //  tryAttach(tab.windowId, {
-    //    name: channelName,
-    //    yOffset: window.height - tab.height,
-    //  });
-    //});
-  } else {
+  if (!channelName) {
     // detach from window
     tryDetach(tab.windowId);
   }
@@ -162,10 +139,6 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
   // is window focused
   chrome.windows.get(sender.tab.windowId, {}, (window) => {
     if (!window.focused) return;
-    if (window.state == 'fullscreen') {
-      tryDetach(sender.tab.windowId);
-      return;
-    }
 
     // get zoom value
     chrome.tabs.getZoom(sender.tab.id, (zoom) => {
@@ -177,7 +150,7 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
       console.log(zoom);
 
       // attach to window
-      tryAttach(sender.tab.windowId, {
+      tryAttach(sender.tab.windowId, window.state == 'fullscreen', {
         name: matchChannelName(sender.tab.url),
         size: size,
       });
@@ -186,11 +159,15 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
 });
 
 // attach chatterino to a chrome window
-function tryAttach(windowId, data) {
+function tryAttach(windowId, fullscreen, data) {
   // console.log('tryAttach');
 
   data.action = 'select';
-  data.attach = true;
+  if (fullscreen) {
+    data.attach_fullscreen = true;
+  } else {
+    data.attach = true;
+  }
   data.type = 'twitch';
   data.winId = '' + windowId;
   data.version = 0;
