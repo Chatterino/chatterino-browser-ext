@@ -6,14 +6,44 @@ const ignoredPages = {
   'subscriptions': true,
   'friends': true,
   'directory': true,
+  'videos': true,
 };
+const attachedWindows = {};
+// we try to detach every native window once at start in case someone reloaded
+// the extension
+let detachedWindowsCache = {};
+const debugCalls = true;
+
+let settings = (() => {
+  const map = {replaceTwitchChat: true};
+
+  // load settings
+  chrome.storage.local.get(Object.keys(map), (result) => {
+    for (let key in map) {
+      if (result[key] !== undefined) {
+        map[key] = result[key];
+      }
+    }
+  });
+
+  console.log(map);
+
+  return {
+    get: (key) => {
+      map[name]
+    }, set: (key, value) => {
+      chrome.storage.local.set({key, value});
+      map[key] = value;
+    }, all: () => map,
+  }
+})();
 
 /// return channel name if it should contain a chat
 function matchChannelName(url) {
   if (!url) return undefined;
 
   const match = url.match(
-      /^https?:\/\/(?:www\.)?twitch.tv\/([a-zA-Z0-9_]+)\/?(?:\?.*)?$/);
+      /^https?:\/\/(?:www\.)?twitch\.tv\/([a-zA-Z0-9_]+)(?:\/(?!clip)(?:\?.*)?)?$/);
 
   let channelName;
   if (match && (channelName = match[1], !ignoredPages[channelName])) {
@@ -31,7 +61,7 @@ function getPort() {
   if (port) {
     return port;
   } else {
-    // TODO: add cooldown
+    // XXX: add cooldown?
     connectPort();
 
     return port;
@@ -42,24 +72,26 @@ function getPort() {
 function connectPort() {
   port = chrome.runtime.connectNative(appName);
   console.log('port connected');
-  let connected = true;
+
+  detachedWindowsCache = {};
 
   port.onMessage.addListener((msg) => {
     console.log(msg);
   });
   port.onDisconnect.addListener((xd) => {
-    console.log('port disconnected');
-    console.log((xd | {}).error);
+    console.log('port disconnected', (xd | {}).error, chrome.runtime.lastError);
 
     port = null;
   });
+}
 
-  let sendPing = () => {
-    if (connected) {
-      port.postMessage({ping: true});
-    } else {
-      setTimeout(sendPing, 5000);
-    }
+// disconnect from port
+function disconnectPort() {
+  if (debugCalls) console.log('disconnectPort');
+
+  if (port) {
+    port.disconnect();
+    port = null;
   }
 }
 
@@ -71,11 +103,14 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
     chrome.windows.get(tab.windowId, {}, (window) => {
       if (!window.focused) return;
 
-      console.log('onActivated');
+      if (debugCalls) console.log('onActivated');
+
       onTabSelected(tab.url, tab);
     });
   });
 });
+
+
 
 // url changed
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
@@ -84,20 +119,23 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   chrome.windows.get(tab.windowId, {}, (window) => {
     if (!window.focused) return;
 
-    console.log('onUpdated');
+    if (debugCalls) console.log('onUpdated');
+
     onTabSelected(tab.url, tab);
   });
 });
 
 // tab detached
 chrome.tabs.onDetached.addListener((tabId, detachInfo) => {
-  console.log('onDetached');
+  if (debugCalls) console.log('onDetached');
+
   tryDetach(detachInfo.oldWindowId);
 });
 
 // tab closed
 chrome.windows.onRemoved.addListener((windowId) => {
-  console.log('onRemoved');
+  if (debugCalls) console.log('onRemoved');
+
   tryDetach(windowId);
 });
 
@@ -112,7 +150,8 @@ chrome.windows.onFocusChanged.addListener((windowId) => {
       let tab = tabs[0];
 
       chrome.windows.get(tab.windowId, (window) => {
-        console.log('onFocusChanged');
+        if (debugCalls) console.log('onFocusChanged');
+
         onTabSelected(tab.url, tab);
       });
     }
@@ -129,38 +168,81 @@ function onTabSelected(url, tab) {
   }
 }
 
+
+
 // receiving messages from the inject script
 chrome.runtime.onMessage.addListener((message, sender, callback) => {
-  // console.log(message);
+  console.log(message);
 
-  // is tab highlighted
-  if (!sender.tab.highlighted) return;
+  switch (message.type) {
+    case 'get-settings':
+      callback(settings.all());
+      break;
+    case 'set-setting':
+      settings.set(message.key, message.value);
 
-  // is window focused
-  chrome.windows.get(sender.tab.windowId, {}, (window) => {
-    if (!window.focused) return;
+      for (let id in attachedWindows) {
+        tryDetach(id);
+      }
+      updateBadge();
 
-    // get zoom value
-    chrome.tabs.getZoom(sender.tab.id, (zoom) => {
-      let size = {
-        width: Math.floor(message.rect.width * zoom),
-        height: Math.floor(message.rect.height * zoom),
-      };
+      break;
+    case 'location-updated':
+      chrome.windows.get(sender.tab.windowId, {}, (window) => {
+        if (!window.focused) return;
 
-      console.log(zoom);
+        let data = {
+          action: 'select',
+          type: 'twitch',
+          winId: sender.tab.windowId,
+          version: 0,
+          name: matchChannelName(sender.tab.url),
+        };
+        let port = getPort();
 
-      // attach to window
-      tryAttach(sender.tab.windowId, window.state == 'fullscreen', {
-        name: matchChannelName(sender.tab.url),
-        size: size,
+        if (port) {
+          port.postMessage(data);
+        }
       });
-    });
-  });
+      break;
+    case 'chat-resized':
+      // is tab highlighted
+      if (!sender.tab.highlighted) return;
+
+      // is window focused
+      chrome.windows.get(sender.tab.windowId, {}, (window) => {
+        if (!window.focused) return;
+
+        // get zoom value
+        chrome.tabs.getZoom(sender.tab.id, (zoom) => {
+          let size = {
+            width: Math.floor(message.rect.width * zoom),
+            height: Math.floor(message.rect.height * zoom),
+          };
+
+          // attach to window
+          tryAttach(sender.tab.windowId, window.state == 'fullscreen', {
+            name: matchChannelName(sender.tab.url),
+            size: size,
+          });
+        });
+      });
+      break;
+    case 'detach':
+      tryDetach(sender.tab.windowId);
+      break;
+  }
 });
+
+
 
 // attach chatterino to a chrome window
 function tryAttach(windowId, fullscreen, data) {
-  // console.log('tryAttach');
+  if (!settings.all().replaceTwitchChat) {
+    return;
+  }
+
+  console.log('tryAttach ' + windowId);
 
   data.action = 'select';
   if (fullscreen) {
@@ -177,15 +259,35 @@ function tryAttach(windowId, fullscreen, data) {
   if (port) {
     port.postMessage(data);
   }
+
+  attachedWindows[windowId] = {};
 }
 
 // detach chatterino from a chrome window
 function tryDetach(windowId) {
-  // console.log('tryDetach');
+  if (attachedWindows[windowId] === undefined &&
+      detachedWindowsCache[windowId] !== undefined) {
+    return;
+  }
+
+  detachedWindowsCache[windowId] = {};
+
+  console.log('tryDetach ' + windowId);
 
   let port = getPort();
 
   if (port) {
     port.postMessage({action: 'detach', version: 0, winId: '' + windowId})
   }
+
+  if (attachedWindows[windowId] !== undefined) {
+    delete attachedWindows[windowId];
+  }
 }
+
+function updateBadge() {
+  chrome.browserAction.setBadgeText(
+      {text: settings.all().replaceTwitchChat ? '' : 'off'});
+}
+
+updateBadge();

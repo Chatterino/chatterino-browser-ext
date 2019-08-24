@@ -4,7 +4,8 @@
   "description": "Replaces the chat on Twitch.tv with Chatterino.",
   "permissions": [
     "tabs",
-    "nativeMessaging"
+    "nativeMessaging",
+    "storage"
   ],
   "icons": {
     "256": "icon.png"
