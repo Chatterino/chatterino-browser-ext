@@ -4,12 +4,14 @@
 
   let settings = {};
   let installedObjects = {};
-  let rightCollapseButton = null;
-  let isCollapsed = false;
   let popupChatLink = null;
   let errorDiv = null;
 
   let showingChat = false;
+
+  window.addEventListener(
+      'hashchange',
+      () => {console.log('asdfasdfsadfsadfadsfsadfasdfsadfdsafsadf')}, false);
 
   const ignoredPages = {
     'settings': true,
@@ -55,14 +57,11 @@
 
   // install events
   function installChatterino() {
+    log('XXXXXXXXXXXXXXXX installing');
     if (matchChannelName(window.location.href)) {
       showingChat = true;
       if (settings.replaceTwitchChat) {
         replaceChat();
-      } else {
-        window.addEventListener(
-            'hashchange',
-            () => {chrome.runtime.sendMessage({'type': 'location-updated'})});
       }
     } else {
       showingChat = false;
@@ -72,38 +71,14 @@
 
   function replaceChat() {
     log('attempting to replacing chat');
-    queryChatRect();
 
     let retry = false;
 
-    // right collapse button
-    if (!installedObjects.rightCollapse) {
-      retry = true;
-
-      let x = findRightCollapse();
-
-      if (x != undefined) {
-        rightCollapseButton = x;
-
-        x.addEventListener('click', () => {
-          let y = findChatDiv();
-
-          if (parseInt(y.style.width) == 0) {
-            y.style.width = '340px';
-            isCollapsed = false;
-          } else {
-            y.style.width = 0;
-            isCollapsed = true;
-          }
-        });
-
-        installedObjects.rightCollapse = true;
-      }
-    }
-
     // right column
-    if (!installedObjects.rightColumn && installedObjects.rightCollapse) {
+    if (!installedObjects.rightColumn) {
       let x = findChatDiv();
+
+      window.chatDiv = x;
 
       if (x != undefined && x.children.length >= 2) {
         x.children[0].innerHTML =
@@ -120,19 +95,18 @@
 
     // nav bar
     if (!installedObjects.topNav) {
-      if (rightCollapseButton) {
-        let x = findNavBar();
+      let x = findNavBar();
 
+      if (x === undefined) {
+        retry = true;
+      } else {
         x.addEventListener('mouseup', () => {
-          if (!isCollapsed) {
-            let collapse = findRightCollapse();
-            collapse.click();
+          if (findChatDiv() && findChatDiv().clientWidth != 0) {
+            findRightCollapse().click();
           }
         });
 
         installedObjects.topNav = true;
-      } else {
-        retry = true;
       }
     }
 
@@ -158,14 +132,14 @@
       }
     }
 
-    console.log(installedObjects);
-
     // retry if needed
     if (retry) {
       setTimeout(installChatterino, 1000);
     } else {
       log('installed all events');
     }
+
+    queryChatRect();
   }
 
   // query the rect of the chat
@@ -219,10 +193,8 @@
     } else {
       errorDiv.innerHTML = 'Chatterino should show here:<br><br>' +
           'Try deselecting and selecting the page.<br>' +
-          'Chatterino also needs to be running.<br>' +
-          'You can temporarily disable the extension by clicking the icon.'
-
-      '';
+          'Chatterino also needs to be running.<br><br>' +
+          'You can temporarily disable the extension in the extension.';
     }
   }
 
@@ -252,11 +224,22 @@
   window.addEventListener('resize', queryChatRect);
   window.addEventListener('focus', queryChatRect);
   window.addEventListener('mouseup', () => setTimeout(queryChatRect, 10));
-  window.addEventListener('hashchange', () => {
-    installedObjects = {};
-    installChatterino();
-    if (settings.replaceTwitchChat) {
-      updatePopupChatLink();
+
+  let path = location.pathname;
+  setInterval(() => {
+    if (location.pathname != path) {
+      path = location.pathname;
+
+      log('path changed');
+
+      installedObjects = {};
+      installChatterino();
+      if (settings.replaceTwitchChat) {
+        updatePopupChatLink();
+      }
+      if (matchChannelName(window.location.href)) {
+        chrome.runtime.sendMessage({'type': 'location-updated'});
+      }
     }
-  });
+  }, 1000);
 })()
