@@ -9,10 +9,6 @@
 
   let showingChat = false;
 
-  window.addEventListener(
-      'hashchange',
-      () => {console.log('asdfasdfsadfsadfadsfsadfasdfsadfdsafsadf')}, false);
-
   const ignoredPages = {
     'settings': true,
     'payments': true,
@@ -57,7 +53,6 @@
 
   // install events
   function installChatterino() {
-    log('XXXXXXXXXXXXXXXX installing');
     if (matchChannelName(window.location.href)) {
       showingChat = true;
       if (settings.replaceTwitchChat) {
@@ -151,7 +146,6 @@
     let element = findChatDiv();
 
     if (element === undefined) {
-      log('failed to find chat div');
       return;
     }
 
