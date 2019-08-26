@@ -143,6 +143,11 @@
       return;
     }
 
+    if (document.querySelector('.video-player--fullscreen')) {
+      chrome.runtime.sendMessage({type: 'detach'});
+      return;
+    }
+
     let element = findChatDiv();
 
     if (element === undefined) {
