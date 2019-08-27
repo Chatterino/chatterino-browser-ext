@@ -18,6 +18,7 @@
     'friends': true,
     'directory': true,
     'videos': true,
+    'prime': true,
   };
 
   let errors = {};
@@ -27,7 +28,7 @@
     if (!url) return undefined;
 
     const match = url.match(
-        /^https?:\/\/(?:www\.)?twitch\.tv\/([a-zA-Z0-9_]+)(?:\/(?!clip)(?:\?.*)?)?$/);
+      /^^https?:\/\/(?:www\.)?twitch\.tv(\/\w+)?(?:\/(?:videos|clips|events|followers|following))?\/?(?:\?.*)?$/;
 
     let channelName;
     if (match && (channelName = match[1], !ignoredPages[channelName])) {
