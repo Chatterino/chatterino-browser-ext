@@ -27,8 +27,8 @@
   function matchChannelName(url) {
     if (!url) return undefined;
 
-    const match = url.match(
-      /^^https?:\/\/(?:www\.)?twitch\.tv(\/\w+)?(?:\/(?:videos|clips|events|followers|following))?\/?(?:\?.*)?$/;
+    const match =
+        url.match(/^https?:\/\/(?:www\.)?twitch\.tv\/(\w+)\/?(?:\?.*)?$/);
 
     let channelName;
     if (match && (channelName = match[1], !ignoredPages[channelName])) {
@@ -110,8 +110,10 @@
     if (!installedObjects.infoBar) {
       let x = findInfoBar();
 
-      if (x != undefined) {
+      if (x != undefined &&
+          !document.querySelector('#chatterino-popup-chat-link')) {
         let link = document.createElement('a');
+        link.id = 'chatterino-popup-chat-link';
         link.target = '_blank';
         link.style.margin = '0 16px';
         link.style.color = '#ff9999';
