@@ -28,7 +28,7 @@
     if (!url) return undefined;
 
     const match =
-        url.match(/^https?:\/\/(?:www\.)?twitch\.tv\/(\w+)\/?(?:\?.*)?$/);
+      url.match(/^https?:\/\/(?:www\.)?twitch\.tv\/(\w+)\/?(?:\?.*)?$/);
 
     let channelName;
     if (match && (channelName = match[1], !ignoredPages[channelName])) {
@@ -40,12 +40,12 @@
 
   let findChatDiv = () => document.getElementsByClassName('right-column')[0];
   let findRightCollapse = () =>
-      document.getElementsByClassName('right-column__toggle-visibility')[0];
+    document.getElementsByClassName('right-column__toggle-visibility')[0].children[0];
   let findRightColumn = () =>
-      document.getElementsByClassName('channel-page__right-column')[0];
-  let findNavBar = () => document.getElementsByClassName('top-nav__menu')[0];
+    document.getElementsByClassName('channel-page__right-column')[0];
+  let findNavBar = () => document.getElementsByClassName('top-nav')[0];
   let findInfoBar = () =>
-      document.getElementsByClassName('channel-info-bar__content-right')[0];
+    document.getElementsByClassName('channel-info-bar__content-right')[0];
 
   // logging function
   function log(obj) {
@@ -61,7 +61,7 @@
       }
     } else {
       showingChat = false;
-      chrome.runtime.sendMessage({type: 'detach'});
+      chrome.runtime.sendMessage({ type: 'detach' });
     }
   }
 
@@ -78,7 +78,7 @@
 
       if (x != undefined && x.children.length >= 2) {
         x.children[0].innerHTML =
-            '<div style="width: 340px; height: 100%; justify-content: center; display: flex; flex-direction: column; text-align: center; color: #999; user-select: none; background: #222;"></div>';
+          '<div style="width: 340px; height: 100%; justify-content: center; display: flex; flex-direction: column; text-align: center; color: #999; user-select: none; background: #222;"></div>';
 
         errorDiv = x.children[0].children[0];
         updateErrors();
@@ -111,14 +111,14 @@
       let x = findInfoBar();
 
       if (x != undefined &&
-          !document.querySelector('#chatterino-popup-chat-link')) {
+        !document.querySelector('#chatterino-popup-chat-link')) {
         let link = document.createElement('a');
         link.id = 'chatterino-popup-chat-link';
         link.target = '_blank';
         link.style.margin = '0 16px';
         link.style.color = '#ff9999';
         link.appendChild(
-            document.createTextNode('Open popup chat (for resubs)'));
+          document.createTextNode('Open popup chat (for resubs)'));
 
         x.appendChild(link);
 
@@ -147,7 +147,7 @@
     }
 
     if (document.querySelector('.video-player--fullscreen')) {
-      chrome.runtime.sendMessage({type: 'detach'});
+      chrome.runtime.sendMessage({ type: 'detach' });
       return;
     }
 
@@ -172,7 +172,7 @@
 
     let data = {
       type: 'chat-resized',
-      rect: {x: rect.x, y: rect.y, width: rect.width, height: rect.height},
+      rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
     };
 
     isCollapsed = rect.width == 0;
@@ -188,29 +188,35 @@
   function updateErrors() {
     if (!errorDiv) return;
 
+    let closeButton =
+      '<div onclick="document.getElementsByClassName(`right-column__toggle-visibility`)[0].children[0].click()" style="padding:5px; left: -30px; width: 30px; height: 30px; background: #222;z-index: 100;cursor: pointer;top: 10px;position: absolute;transform: rotateZ(180deg);color: white;"><svg class="tw-icon__svg" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M16 16V4h2v12h-2zM6 9l2.501-2.5-1.5-1.5-5 5 5 5 1.5-1.5-2.5-2.5h8V9H6z"></path></g></svg></div>'
+
     if (errors.sendMessage) {
       errorDiv.innerHTML =
-          'Connection to the Chatterino extension lost!<br><br>' +
-          'Please reload the page.';
+        closeButton +
+        'Connection to the Chatterino extension lost!<br><br>' +
+        'Please reload the page.';
     } else {
-      errorDiv.innerHTML = 'Chatterino should show here:<br><br>' +
-          'Try deselecting and selecting the page.<br>' +
-          'Chatterino also needs to be running.<br><br>' +
-          'You can temporarily disable the extension in the extension.';
+      errorDiv.innerHTML =
+        closeButton +
+        'Chatterino should show here:<br><br>' +
+        'Try deselecting and selecting the page.<br>' +
+        'Chatterino also needs to be running.<br><br>' +
+        'You can temporarily disable the extension in the extension.';
     }
   }
 
   function updatePopupChatLink() {
     if (popupChatLink !== null) {
       popupChatLink.href =
-          '/popout/' + matchChannelName(window.location.href) + '/chat';
+        '/popout/' + matchChannelName(window.location.href) + '/chat';
     }
   }
 
   log('hello there in the dev tools 👋');
 
   try {
-    chrome.runtime.sendMessage({'type': 'get-settings'}, (settings_) => {
+    chrome.runtime.sendMessage({ 'type': 'get-settings' }, (settings_) => {
       log(settings_);
 
       settings = settings_;
@@ -240,7 +246,7 @@
         updatePopupChatLink();
       }
       if (matchChannelName(window.location.href)) {
-        chrome.runtime.sendMessage({'type': 'location-updated'});
+        chrome.runtime.sendMessage({ 'type': 'location-updated' });
       }
     }
   }, 1000);

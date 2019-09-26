@@ -17,7 +17,7 @@ let detachedWindowsCache = {};
 const debugCalls = true;
 
 let settings = (() => {
-  const map = {replaceTwitchChat: true};
+  const map = { replaceTwitchChat: true };
 
   // load settings
   chrome.storage.local.get(Object.keys(map), (result) => {
@@ -26,15 +26,16 @@ let settings = (() => {
         map[key] = result[key];
       }
     }
+    updateBadge();
   });
-
-  console.log(map);
 
   return {
     get: (key) => {
       map[name]
     }, set: (key, value) => {
-      chrome.storage.local.set({key, value});
+      let obj = {}
+      obj[key] = value;
+      chrome.storage.local.set(obj);
       map[key] = value;
     }, all: () => map,
   }
@@ -45,7 +46,7 @@ function matchChannelName(url) {
   if (!url) return undefined;
 
   const match =
-      url.match(/^https?:\/\/(?:www\.)?twitch\.tv\/(\w+)\/?(?:\?.*)?$/);
+    url.match(/^https?:\/\/(?:www\.)?twitch\.tv\/(\w+)\/?(?:\?.*)?$/);
 
   let channelName;
   if (match && (channelName = match[1], !ignoredPages[channelName])) {
@@ -147,7 +148,7 @@ chrome.windows.onFocusChanged.addListener((windowId) => {
   if (windowId == -1) return;
 
   // this returns all tabs when the query fails
-  chrome.tabs.query({windowId: windowId, highlighted: true}, (tabs) => {
+  chrome.tabs.query({ windowId: windowId, highlighted: true }, (tabs) => {
     if (tabs.length === 1) {
       let tab = tabs[0];
 
@@ -268,7 +269,7 @@ function tryAttach(windowId, fullscreen, data) {
 // detach chatterino from a chrome window
 function tryDetach(windowId) {
   if (attachedWindows[windowId] === undefined &&
-      detachedWindowsCache[windowId] !== undefined) {
+    detachedWindowsCache[windowId] !== undefined) {
     return;
   }
 
@@ -279,7 +280,7 @@ function tryDetach(windowId) {
   let port = getPort();
 
   if (port) {
-    port.postMessage({action: 'detach', version: 0, winId: '' + windowId})
+    port.postMessage({ action: 'detach', version: 0, winId: '' + windowId })
   }
 
   if (attachedWindows[windowId] !== undefined) {
@@ -289,7 +290,5 @@ function tryDetach(windowId) {
 
 function updateBadge() {
   chrome.browserAction.setBadgeText(
-      {text: settings.all().replaceTwitchChat ? '' : 'off'});
+    { text: settings.all().replaceTwitchChat ? '' : 'off' });
 }
-
-updateBadge();
