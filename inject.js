@@ -146,7 +146,7 @@
       return;
     }
 
-    if (document.querySelector('.video-player--fullscreen') || document.fullscreen) {
+    if (document.fullscreenElement != null) {
       chrome.runtime.sendMessage({ type: 'detach' });
       return;
     }
