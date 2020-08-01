@@ -199,6 +199,7 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
           type: 'twitch',
           winId: sender.tab.windowId,
           version: 0,
+          x: message.rect.x + 1,
           name: matchChannelName(sender.tab.url),
         };
         let port = getPort();
@@ -219,6 +220,7 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
         // get zoom value
         chrome.tabs.getZoom(sender.tab.id, (zoom) => {
           let size = {
+            x: message.rect.x,
             width: Math.floor(message.rect.width * zoom),
             height: Math.floor(message.rect.height * zoom),
           };
