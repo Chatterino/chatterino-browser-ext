@@ -66,7 +66,7 @@
   }
 
   function replaceChat() {
-    log('attempting to replacing chat');
+    log('attempting to replace chat');
 
     let retry = false;
 
@@ -146,7 +146,7 @@
       return;
     }
 
-    if (document.querySelector('.video-player--fullscreen')) {
+    if (document.fullscreenElement != null) {
       chrome.runtime.sendMessage({ type: 'detach' });
       return;
     }
