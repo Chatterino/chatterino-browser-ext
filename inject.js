@@ -107,6 +107,7 @@
     }
 
     // open popup link
+    /*
     if (!installedObjects.infoBar) {
       let x = findInfoBar();
 
@@ -129,6 +130,7 @@
         retry = true;
       }
     }
+    */
 
     // retry if needed
     if (retry) {
