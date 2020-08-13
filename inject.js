@@ -38,7 +38,7 @@
     return undefined;
   }
 
-  let findChatDiv = () => document.getElementsByClassName('right-column')[0];
+  let findChatDiv = () => document.getElementsByClassName('chat-shell')[0];
   let findRightCollapse = () =>
     document.getElementsByClassName('right-column__toggle-visibility')[0].children[0];
   let findRightColumn = () =>
@@ -76,7 +76,7 @@
 
       window.chatDiv = x;
 
-      if (x != undefined && x.children.length >= 2) {
+      if (x != undefined && x.children.length >= 1) {
         x.children[0].innerHTML =
           '<div style="width: 340px; height: 100%; justify-content: center; display: flex; flex-direction: column; text-align: center; color: #999; user-select: none; background: #222;"></div>';
 
