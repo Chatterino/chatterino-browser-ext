@@ -174,6 +174,7 @@
 
     let data = {
       type: 'chat-resized',
+      pixelRatio: window.devicePixelRatio,
       rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
     };
 
@@ -231,7 +232,7 @@
 
   // event listeners
   window.addEventListener('load', () => setTimeout(queryChatRect, 1000));
-  window.addEventListener('resize', queryChatRect);
+  window.addEventListener('resize', () => {queryChatRect; setTimeout(queryChatRect, 475);});
   window.addEventListener('focus', queryChatRect);
   window.addEventListener('mouseup', () => setTimeout(queryChatRect, 10));
 

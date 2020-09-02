@@ -220,6 +220,7 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
         chrome.tabs.getZoom(sender.tab.id, (zoom) => {
           let size = {
             x: message.rect.x,
+            pixelRatio: message.pixelRatio,
             width: Math.floor(message.rect.width * zoom),
             height: Math.floor(message.rect.height * zoom),
           };
