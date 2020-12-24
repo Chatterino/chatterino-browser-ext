@@ -190,6 +190,13 @@
   function updateErrors() {
     if (!errorDiv) return;
 
+    if (errors.osUnsupported) {
+     errorDiv.innerHTML =
+       "The Chatterino Native Host browser extension currently only works on Windows.";
+
+     return;
+    }
+
     let closeButton =
       '<div onclick="document.getElementsByClassName(`right-column__toggle-visibility`)[0].children[0].children[0].click()" style="padding:5px; left: -30px; width: 30px; height: 30px; background: #222;z-index: 100;cursor: pointer;top: 10px;position: absolute;transform: rotateZ(180deg);color: white;"><svg class="tw-icon__svg" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill="#bbbbbb" d="M16 16V4h2v12h-2zM6 9l2.501-2.5-1.5-1.5-5 5 5 5 1.5-1.5-2.5-2.5h8V9H6z"></path></g></svg></div>'
 
@@ -228,6 +235,22 @@
     errors.sendMessage = true;
     updateErrors();
   }
+
+  try {
+    chrome.runtime.sendMessage({ 'type': 'get-os' }, (os) => {
+      // Available OS string are documented here:
+      // https://developer.chrome.com/docs/extensions/reference/runtime/#type-PlatformOs
+      if (os !== "win") {
+        errors.osUnsupported = true;
+      }
+
+      updateErrors();
+    });
+  } catch {
+    errors.sendMessage = true;
+    updateErrors();
+  }
+
 
   // event listeners
   window.addEventListener('load', () => setTimeout(queryChatRect, 1000));
