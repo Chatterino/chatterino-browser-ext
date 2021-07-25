@@ -190,6 +190,16 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
       updateBadge();
 
       break;
+    case 'get-os':
+      chrome.runtime.getPlatformInfo((info) => {
+        callback(info.os);
+      });
+
+      // We need to return true here so that `callback` will remain valid
+      // after this function returns. This behavior is documented here:
+      // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/runtime/onMessage
+      return true;
+      break;
     case 'location-updated':
       chrome.windows.get(sender.tab.windowId, {}, (window) => {
         if (!window.focused) return;
