@@ -26,7 +26,7 @@
   // return channel name if it should contain a chat or undefined
   function matchChannelName(url) {
     if (!url) return undefined;
-
+    // regex test https://regex101.com/r/aMrVOf/1
     const match =
       url.match(/^https?:\/\/(?:www\.)?twitch\.tv\/(\w+)\/?(?:\?.*)?$/);
 
