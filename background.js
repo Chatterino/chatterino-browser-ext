@@ -253,17 +253,15 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
 
 // attach chatterino to a chrome window
 function tryAttach(windowId, fullscreen, data) {
-  if (!settings.all().replaceTwitchChat) {
-    return;
-  }
-
   console.log('tryAttach ' + windowId);
 
   data.action = 'select';
-  if (fullscreen) {
-    data.attach_fullscreen = true;
-  } else {
-    data.attach = true;
+  if (settings.all().replaceTwitchChat) {
+    if (fullscreen) {
+      data.attach_fullscreen = true;
+    } else {
+      data.attach = true;
+    }
   }
   data.type = 'twitch';
   data.winId = '' + windowId;
