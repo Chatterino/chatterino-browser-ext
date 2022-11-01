@@ -2,7 +2,7 @@
 
 [![Firefox Addon](https://img.shields.io/amo/v/chatterino_native@chatterino.com)][firefox-addon] [![Chrome Addon](https://img.shields.io/chrome-web-store/v/glknmaideaikkmemifbfkhnomoknepka)][chrome-ext]
 
-Browser extension for [Firefox][firefox-addon] and [Chrome][chrome-ext] that provides the currently watched channel to the [Chatterino 2][chatterino] [Twitch.tv][twitch] chat client.
+Browser extension for [Firefox][firefox-addon] and [Chrome][chrome-ext] that provides the currently watched channel and information about the browser's position to the [Chatterino 2][chatterino] [Twitch.tv][twitch] chat client.
 
 ## Features
 
