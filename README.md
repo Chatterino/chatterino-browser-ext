@@ -6,7 +6,7 @@ Browser extension for [Firefox][firefox-addon] and [Chrome][chrome-ext] that pro
 
 ## Features
 
-- Replace [Twitch][twitch]'s native chat with [Chatterino][chatterino].
+- Replace [Twitch][twitch]'s native chat with [Chatterino][chatterino] (Windows only).
 - Provide the currently watched channel for display in the "watching" split.
 
 ## Contributing
