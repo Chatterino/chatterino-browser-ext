@@ -21,7 +21,7 @@ We use `prettier` to format the code files. Run `pnpm format` to format all file
 
 ## Communication
 
-This extension uses [native messageing](https://developer.mozilla.org/docs/Mozilla/Add-ons/WebExtensions/Native_messaging) to communicate with [Chatterino][chatterino]
+This extension uses [native messageing](https://developer.mozilla.org/docs/Mozilla/Add-ons/WebExtensions/Native_messaging) to communicate with [Chatterino][chatterino].
 
 Messages are encoded as JSON in the following structure:
 
