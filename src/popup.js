@@ -1,4 +1,4 @@
-chrome.runtime.sendMessage({type: 'get-settings'}, (settings_) => {
+chrome.runtime.sendMessage({ type: 'get-settings' }, settings_ => {
   // replace twitch chat setting
   let item = document.querySelector('#replace-twitch');
 

@@ -1,0 +1,11 @@
+{
+  "name": "chatterino-browser-ext",
+  "private": true,
+  "scripts": {
+    "format": "prettier -w **/*.{md,js,ts,jsx,tsx,html,css,json,yaml,yml}",
+    "check-format": "prettier -c **/*.{md,js,ts,jsx,tsx,html,css,json,yaml,yml}"
+  },
+  "devDependencies": {
+    "prettier": "^2.7.1"
+  }
+}
