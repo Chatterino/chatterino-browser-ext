@@ -1,14 +1,14 @@
 const ignoredPages = {
-  'settings': true,
-  'payments': true,
-  'inventory': true,
-  'messages': true,
-  'subscriptions': true,
-  'friends': true,
-  'directory': true,
-  'videos': true,
-  'prime': true,
-  'popout': true,
+  settings: true,
+  payments: true,
+  inventory: true,
+  messages: true,
+  subscriptions: true,
+  friends: true,
+  directory: true,
+  videos: true,
+  prime: true,
+  popout: true,
 };
 const attachedWindows = {};
 // we try to detach every native window once at start in case someone reloaded
@@ -20,7 +20,7 @@ let settings = (() => {
   const map = { replaceTwitchChat: true };
 
   // load settings
-  chrome.storage.local.get(Object.keys(map), (result) => {
+  chrome.storage.local.get(Object.keys(map), result => {
     for (let key in map) {
       if (result[key] !== undefined) {
         map[key] = result[key];
@@ -30,26 +30,29 @@ let settings = (() => {
   });
 
   return {
-    get: (key) => {
-      map[name]
-    }, set: (key, value) => {
-      let obj = {}
+    get: key => {
+      map[name];
+    },
+    set: (key, value) => {
+      let obj = {};
       obj[key] = value;
       chrome.storage.local.set(obj);
       map[key] = value;
-    }, all: () => map,
-  }
+    },
+    all: () => map,
+  };
 })();
 
 /// return channel name if it should contain a chat
 function matchChannelName(url) {
   if (!url) return undefined;
 
-  const match =
-    url.match(/^https?:\/\/(?:www\.)?twitch\.tv\/(\w+)\/?(?:\?.*)?$/);
+  const match = url.match(
+    /^https?:\/\/(?:www\.)?twitch\.tv\/(\w+)\/?(?:\?.*)?$/
+  );
 
   let channelName;
-  if (match && (channelName = match[1], !ignoredPages[channelName])) {
+  if (match && ((channelName = match[1]), !ignoredPages[channelName])) {
     return channelName;
   }
 
@@ -78,10 +81,10 @@ function connectPort() {
 
   detachedWindowsCache = {};
 
-  port.onMessage.addListener((msg) => {
+  port.onMessage.addListener(msg => {
     console.log(msg);
   });
-  port.onDisconnect.addListener((xd) => {
+  port.onDisconnect.addListener(xd => {
     console.log('port disconnected', (xd | {}).error, chrome.runtime.lastError);
 
     port = null;
@@ -99,11 +102,11 @@ function disconnectPort() {
 }
 
 // tab activated
-chrome.tabs.onActivated.addListener((activeInfo) => {
-  chrome.tabs.get(activeInfo.tabId, (tab) => {
+chrome.tabs.onActivated.addListener(activeInfo => {
+  chrome.tabs.get(activeInfo.tabId, tab => {
     if (!tab || !tab.url) return;
 
-    chrome.windows.get(tab.windowId, {}, (window) => {
+    chrome.windows.get(tab.windowId, {}, window => {
       if (!window.focused) return;
 
       if (debugCalls) console.log('onActivated');
@@ -113,13 +116,11 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
   });
 });
 
-
-
 // url changed
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (!tab.highlighted) return;
 
-  chrome.windows.get(tab.windowId, {}, (window) => {
+  chrome.windows.get(tab.windowId, {}, window => {
     if (!window.focused) return;
 
     if (debugCalls) console.log('onUpdated');
@@ -136,23 +137,23 @@ chrome.tabs.onDetached.addListener((tabId, detachInfo) => {
 });
 
 // tab closed
-chrome.windows.onRemoved.addListener((windowId) => {
+chrome.windows.onRemoved.addListener(windowId => {
   if (debugCalls) console.log('onRemoved');
 
   tryDetach(windowId);
 });
 
 // window selected
-chrome.windows.onFocusChanged.addListener((windowId) => {
+chrome.windows.onFocusChanged.addListener(windowId => {
   console.log(windowId);
   if (windowId == -1) return;
 
   // this returns all tabs when the query fails
-  chrome.tabs.query({ windowId: windowId, highlighted: true }, (tabs) => {
+  chrome.tabs.query({ windowId: windowId, highlighted: true }, tabs => {
     if (tabs.length === 1) {
       let tab = tabs[0];
 
-      chrome.windows.get(tab.windowId, (window) => {
+      chrome.windows.get(tab.windowId, window => {
         if (debugCalls) console.log('onFocusChanged');
 
         onTabSelected(tab.url, tab);
@@ -170,8 +171,6 @@ function onTabSelected(url, tab) {
     tryDetach(tab.windowId);
   }
 }
-
-
 
 // receiving messages from the inject script
 chrome.runtime.onMessage.addListener((message, sender, callback) => {
@@ -191,7 +190,7 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
 
       break;
     case 'get-os':
-      chrome.runtime.getPlatformInfo((info) => {
+      chrome.runtime.getPlatformInfo(info => {
         callback(info.os);
       });
 
@@ -201,7 +200,7 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
       return true;
       break;
     case 'location-updated':
-      chrome.windows.get(sender.tab.windowId, {}, (window) => {
+      chrome.windows.get(sender.tab.windowId, {}, window => {
         if (!window.focused) return;
 
         let data = {
@@ -223,11 +222,11 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
       if (!sender.tab.highlighted) return;
 
       // is window focused
-      chrome.windows.get(sender.tab.windowId, {}, (window) => {
+      chrome.windows.get(sender.tab.windowId, {}, window => {
         if (!window.focused) return;
 
         // get zoom value
-        chrome.tabs.getZoom(sender.tab.id, (zoom) => {
+        chrome.tabs.getZoom(sender.tab.id, zoom => {
           let size = {
             x: message.rect.x,
             pixelRatio: message.pixelRatio,
@@ -248,8 +247,6 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
       break;
   }
 });
-
-
 
 // attach chatterino to a chrome window
 function tryAttach(windowId, fullscreen, data) {
@@ -278,8 +275,10 @@ function tryAttach(windowId, fullscreen, data) {
 
 // detach chatterino from a chrome window
 function tryDetach(windowId) {
-  if (attachedWindows[windowId] === undefined &&
-    detachedWindowsCache[windowId] !== undefined) {
+  if (
+    attachedWindows[windowId] === undefined &&
+    detachedWindowsCache[windowId] !== undefined
+  ) {
     return;
   }
 
@@ -290,7 +289,7 @@ function tryDetach(windowId) {
   let port = getPort();
 
   if (port) {
-    port.postMessage({ action: 'detach', version: 0, winId: '' + windowId })
+    port.postMessage({ action: 'detach', version: 0, winId: '' + windowId });
   }
 
   if (attachedWindows[windowId] !== undefined) {
@@ -299,6 +298,7 @@ function tryDetach(windowId) {
 }
 
 function updateBadge() {
-  chrome.browserAction.setBadgeText(
-    { text: settings.all().replaceTwitchChat ? '' : 'off' });
+  chrome.browserAction.setBadgeText({
+    text: settings.all().replaceTwitchChat ? '' : 'off',
+  });
 }
