@@ -58,9 +58,7 @@
   function installChatterino() {
     if (matchChannelName(window.location.href)) {
       showingChat = true;
-      if (settings.replaceTwitchChat) {
-        replaceChat();
-      }
+      replaceChat();
     } else {
       showingChat = false;
       chrome.runtime.sendMessage({ type: 'detach' });
