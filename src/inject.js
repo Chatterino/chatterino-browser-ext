@@ -176,7 +176,6 @@
 
     let data = {
       type: 'chat-resized',
-      pixelRatio: window.devicePixelRatio,
       rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
     };
 
