@@ -84,8 +84,8 @@ function connectPort() {
   port.onMessage.addListener(msg => {
     console.log(msg);
   });
-  port.onDisconnect.addListener(xd => {
-    console.log('port disconnected', (xd | {}).error, chrome.runtime.lastError);
+  port.onDisconnect.addListener(p => {
+    console.warn('port disconnected', p?.error ?? p, chrome.runtime.lastError);
 
     port = null;
   });
