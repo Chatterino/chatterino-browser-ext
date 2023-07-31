@@ -1,15 +1,22 @@
-const ignoredPages = {
-  settings: true,
-  payments: true,
-  inventory: true,
-  messages: true,
-  subscriptions: true,
-  friends: true,
-  directory: true,
-  videos: true,
-  prime: true,
-  popout: true,
-};
+const ignoredPages = new Set([
+  'directory',
+  'downloads',
+  'friends',
+  'inventory',
+  'jobs',
+  'messages',
+  'p',
+  'payments',
+  'popout',
+  'prime',
+  'settings',
+  'store',
+  'subscriptions',
+  'turbo',
+  'videos',
+  'wallet',
+]);
+
 const attachedWindows = {};
 // we try to detach every native window once at start in case someone reloaded
 // the extension
@@ -47,12 +54,10 @@ let settings = (() => {
 function matchChannelName(url) {
   if (!url) return undefined;
 
-  const match = url.match(
-    /^https?:\/\/(?:www\.)?twitch\.tv\/(\w+)\/?(?:\?.*)?$/
-  );
+  const [, channelName] =
+    url.match(/^https?:\/\/(?:www\.)?twitch\.tv\/(\w+)\/?(?:\?.*)?$/) ?? [];
 
-  let channelName;
-  if (match && ((channelName = match[1]), !ignoredPages[channelName])) {
+  if (channelName && !ignoredPages.has(channelName)) {
     return channelName;
   }
 
@@ -302,3 +307,45 @@ function updateBadge() {
     text: settings.all().replaceTwitchChat ? '' : 'off',
   });
 }
+
+// The previous state sent to chatterino
+let previousTabs = new Set();
+function syncTabs() {
+  function compareTabs(lhs, rhs) {
+    if (lhs.size !== rhs.size) {
+      return false;
+    }
+
+    for (const value of lhs) {
+      if (!rhs.has(value)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  chrome.tabs.query({ url: '*://*.twitch.tv/*' }, tabs => {
+    const currentTabs = new Set(
+      tabs.map(t => matchChannelName(t.url)).filter(Boolean)
+    );
+    if (compareTabs(previousTabs, currentTabs)) {
+      return;
+    }
+    previousTabs = currentTabs;
+    console.log('sending updated tabs:', currentTabs);
+
+    const port = getPort();
+    if (port) {
+      port.postMessage({ action: 'sync', twitch: [...currentTabs] });
+    }
+  });
+}
+syncTabs();
+
+chrome.tabs.onCreated.addListener(() => syncTabs());
+chrome.tabs.onRemoved.addListener(() => syncTabs());
+chrome.tabs.onUpdated.addListener((id, changeInfo) => {
+  if ('url' in changeInfo) {
+    syncTabs();
+  }
+});
