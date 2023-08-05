@@ -336,7 +336,7 @@ function syncTabs() {
 
     const port = getPort();
     if (port) {
-      port.postMessage({ action: 'sync', twitch: [...currentTabs] });
+      port.postMessage({ action: 'sync', twitchChannels: [...currentTabs] });
     }
   });
 }
