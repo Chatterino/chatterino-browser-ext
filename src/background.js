@@ -366,7 +366,7 @@ async function syncTabs() {
 
   const tabs = await chrome.tabs.query({ url: '*://*.twitch.tv/*' });
   const currentTabs = new Set(
-    tabs.map(t => matchChannelName(t.url)).filter(Boolean)
+    tabs.map(t => matchChannelName(t.url)).filter(Boolean),
   );
   if (compareTabs(previousTabs, currentTabs)) {
     return;
