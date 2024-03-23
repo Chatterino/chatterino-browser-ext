@@ -1,23 +1,25 @@
 {
+  "$schema": "https://json.schemastore.org/chrome-manifest",
   "name": "Chatterino Native Host",
-  "version": "1.5",
+  "version": "1.6",
   "description": "Replaces the chat on Twitch.tv with Chatterino.",
   "permissions": ["tabs", "nativeMessaging", "storage"],
+  "host_permissions": ["*://*.twitch.tv/*"],
   "icons": {
     "256": "icon.png"
   },
-  "applications": {
+  "browser_specific_settings": {
     "gecko": {
       "id": "chatterino_native@chatterino.com",
       "strict_min_version": "50.0"
     }
   },
-  "manifest_version": 2,
+  "manifest_version": 3,
   "background": {
-    "scripts": ["background.js"],
-    "persistent": true
+    "service_worker": "background.js",
+    "scripts": ["background.js"]
   },
-  "browser_action": {
+  "action": {
     "default_popup": "popup.html"
   },
   "content_scripts": [
