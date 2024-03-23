@@ -28,7 +28,7 @@
     if (!url) return undefined;
 
     const match = url.match(
-      /^https?:\/\/(?:www\.)?twitch\.tv\/(\w+)\/?(?:\?.*)?$/
+      /^https?:\/\/(?:www\.)?twitch\.tv\/(\w+)\/?(?:\?.*)?$/,
     );
 
     let channelName;
