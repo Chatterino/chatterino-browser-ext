@@ -6,7 +6,7 @@
     "check-format": "prettier -c **/*.{md,js,ts,jsx,tsx,html,css,json,yaml,yml}"
   },
   "devDependencies": {
-    "prettier": "^2.7.1",
+    "prettier": "^3.2.5",
     "@types/chrome": "^0.0.263"
   }
 }
