@@ -120,13 +120,29 @@ function getPort() {
 // connect to port
 function connectPort() {
   port = chrome.runtime.connectNative(appName);
-  console.log('port connected');
+  console.debug('port connected');
 
   port.onMessage.addListener(msg => {
-    console.log(msg);
+    if (typeof msg === 'object' && msg.type === 'status') {
+      switch (msg.status) {
+        case 'exiting-host':
+          console.info(
+            `Native host is exiting: '${msg.reason ?? '<unknown>'}'`,
+          );
+          break;
+        default:
+          console.log(msg);
+          break;
+      }
+    } else {
+      console.log(msg);
+    }
   });
-  port.onDisconnect.addListener(xd => {
-    console.log('port disconnected', xd?.error, chrome.runtime.lastError);
+  port.onDisconnect.addListener(e => {
+    console.debug(
+      'port disconnected',
+      e?.error ?? e ?? chrome.runtime.lastError,
+    );
 
     port = null;
   });
