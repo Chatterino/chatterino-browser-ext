@@ -1,0 +1,83 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: latest
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3.0.0
+        with:
+          version: latest
+          run_install: true
+
+      - name: Build
+        run: pnpm build
+
+      - name: Zip Firefox
+        run: zip -r ../firefox-unsigned.zip .
+        working-directory: build/firefox
+      - name: Zip Chrome
+        run: zip -r ../chrome-unsigned.zip .
+        working-directory: build/chrome
+
+      - name: Upload Firefox
+        uses: actions/upload-artifact@v4
+        with:
+          name: firefox-unsigned.zip
+          path: build/firefox-unsigned.zip
+      - name: Upload Chrome
+        uses: actions/upload-artifact@v4
+        with:
+          name: chrome-unsigned.zip
+          path: build/chrome-unsigned.zip
+
+  create-release:
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/master')
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # allows for tags access
+
+      - name: Download Chrome
+        uses: actions/download-artifact@v4
+        with:
+          name: chrome-unsigned.zip
+          path: release-artifacts/
+      - name: Download Firefix
+        uses: actions/download-artifact@v4
+        with:
+          name: firefox-unsigned.zip
+          path: release-artifacts/
+
+      - name: Create release
+        uses: ncipollo/release-action@v1.14.0
+        with:
+          replacesArtifacts: true
+          allowUpdates: true
+          artifactErrorsFailBuild: true
+          artifacts: 'release-artifacts/*'
+          body: ${{ github.event.head_commit.message }}
+          prerelease: true
+          name: Nightly Release
+          tag: nightly-build
+
+      - name: Update nightly-build tag
+        run: |
+          git tag -f nightly-build
+          git push -f origin nightly-build
+        shell: bash

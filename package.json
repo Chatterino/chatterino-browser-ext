@@ -3,9 +3,12 @@
   "private": true,
   "scripts": {
     "format": "prettier -w **/*.{md,js,ts,jsx,tsx,html,css,json,yaml,yml}",
-    "check-format": "prettier -c **/*.{md,js,ts,jsx,tsx,html,css,json,yaml,yml}"
+    "check-format": "prettier -c **/*.{md,js,ts,jsx,tsx,html,css,json,yaml,yml}",
+    "build": "node build.mjs"
   },
   "devDependencies": {
-    "prettier": "^2.7.1"
+    "prettier": "^3.2.5",
+    "@types/chrome": "^0.0.263",
+    "@types/node": "^20.14.2"
   }
 }
