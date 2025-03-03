@@ -64,6 +64,7 @@
     } else {
       showingChat = false;
       chrome.runtime.sendMessage({ type: 'detach' });
+      chrome.runtime.sendMessage({ type: 'location-updated' });
     }
   }
 
