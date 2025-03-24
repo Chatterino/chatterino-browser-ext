@@ -15,7 +15,7 @@ chrome.runtime.sendMessage({ type: 'get-settings' }, settings_ => {
 
 const platform = await chrome.runtime.getPlatformInfo();
 if (platform.os === 'win') {
-  document.body.classList.add('windows');
+  document.body.classList.add('chatterino-windows');
 } else {
   document.getElementById('min-version').textContent = '2.5.3';
 }

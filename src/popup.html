@@ -15,8 +15,8 @@
         }
       }
 
-      body:not(.windows) .if-windows,
-      body.windows .if-not-windows {
+      body:not(.chatterino-windows) .chatterino-if-windows,
+      body.chatterino-windows .chatterino-if-not-windows {
         display: none;
       }
     </style>
@@ -32,14 +32,14 @@
 
       <h3>Troubleshooting:</h3>
       <ul>
-        <li class="if-not-windows">
+        <li class="chatterino-if-not-windows">
           Chat replacement is not supported on your OS.
         </li>
         <li>
           Make sure <a href="https://chatterino.com">Chatterino</a> version
-          <span class="if-windows">2.1.1</span
-          ><span class="if-not-windows">2.5.3</span> or later is installed and
-          running on your computer.
+          <span class="chatterino-if-windows">2.1.1</span
+          ><span class="chatterino-if-not-windows">2.5.3</span> or later is
+          installed and running on your computer.
         </li>
         <li>There might be issues with other Twitch related extensions.</li>
       </ul>
