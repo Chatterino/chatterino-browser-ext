@@ -62,22 +62,23 @@ class AttachedWindows {
 const debugCalls = true;
 
 const settings = (() => {
-  const map = { replaceTwitchChat: true };
+  const map = { replaceTwitchChat: false };
 
   // load settings
-  chrome.storage.local.get(Object.keys(map), result => {
-    for (let key in map) {
-      if (result[key] !== undefined) {
-        map[key] = result[key];
+  (async () => {
+    const platform = await chrome.runtime.getPlatformInfo();
+    map.replaceTwitchChat = platform.os === 'win';
+
+    const saved = await chrome.storage.local.get(Object.keys(map));
+    for (const key of Object.keys(map)) {
+      if (saved[key] !== undefined) {
+        map[key] = saved[key];
       }
     }
     updateBadge();
-  });
+  })();
 
   return {
-    get: key => {
-      map[name];
-    },
     set: (key, value) => {
       let obj = {};
       obj[key] = value;

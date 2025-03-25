@@ -4,6 +4,20 @@
     <style>
       body {
         width: 400px;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body {
+          color: #eee;
+          background: #121212;
+          color-scheme: dark;
+        }
+      }
+
+      body:not(.chatterino-windows) .chatterino-if-windows,
+      body.chatterino-windows .chatterino-if-not-windows {
+        display: none;
       }
     </style>
   </head>
@@ -11,22 +25,25 @@
   <body>
     <div>
       <h3>Settings:</h3>
-      <label
-        ><input id="replace-twitch" type="checkbox" />Replace twitch chat (page
-        reload required)</label
-      >
+      <label>
+        <input id="replace-twitch" type="checkbox" />Replace Twitch chat (page
+        reload required)
+      </label>
 
       <h3>Troubleshooting:</h3>
       <ul>
-        <li>Only Windows is supported!</li>
+        <li class="chatterino-if-not-windows">
+          Chat replacement is not supported on your OS.
+        </li>
         <li>
           Make sure <a href="https://chatterino.com">Chatterino</a> version
-          2.1.1 or later is installed and running on your computer.
+          <span class="chatterino-if-windows">2.1.1</span
+          ><span class="chatterino-if-not-windows">2.5.3</span> or later is
+          installed and running on your computer.
         </li>
-        <li>Chatterino 1 is <u>not</u> supported.</li>
-        <li>There might be issues with other twitch related extensions.</li>
+        <li>There might be issues with other Twitch related extensions.</li>
       </ul>
     </div>
-    <script src="popup.js"></script>
+    <script src="popup.js" type="module"></script>
   </body>
 </html>
