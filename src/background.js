@@ -281,10 +281,26 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
       chrome.windows.get(sender.tab.windowId, {}, async window => {
         if (!window.focused) return;
 
+        // adjust for vertical tabs
+        let xOffset = 0;
+        // only Firefox has "browser"
+        if ('browser' in self) {
+          // assume that any UI from the browser will always be on the left
+          xOffset = window.width - sender.tab.width;
+          // (Windows only)
+          // Firefox on Windows has -8px(!) insets even when not minimized
+          // (I don't know why). On Windows, only maximized windows have these
+          // insets. To get to the "visible" x-offset, we thus need to subtract
+          // 8px. We account for this in Chatterino already so we need to
+          // counter this. We subtract 8px + 8px - 2px = 14px. The browser
+          // units are in DIP, so we need to divide by the DPR.
+          xOffset -= Math.round(14 / (message.dpr ?? 1));
+        }
+
         // get zoom value
         const zoom = await chrome.tabs.getZoom(sender.tab.id);
         let size = {
-          x: message.rect.x * zoom,
+          x: message.rect.x * zoom + xOffset,
           pixelRatio: 1,
           width: Math.floor(message.rect.width * zoom),
           height: Math.floor(message.rect.height * zoom),
