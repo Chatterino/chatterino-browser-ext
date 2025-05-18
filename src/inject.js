@@ -177,6 +177,7 @@
     let data = {
       type: 'chat-resized',
       rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+      dpr: window.devicePixelRatio,
     };
 
     isCollapsed = rect.width == 0;
