@@ -23,22 +23,33 @@
 
   let errors = {};
 
+  const urlRegexps = [
+    /^https?:\/\/(?:www\.)?twitch\.tv\/(\w+)\/?(?:\?.*)?$/,
+    /^https?:\/\/(?:www\.)?twitch\.tv\/popout\/(\w+)\/chat\/?(?:\?.*)?$/,
+    /^moz-extension:\/\/[a-zA-Z0-9-]+\/player\.html\?channel=(\w+)$/,
+  ];
+
   // return channel name if it should contain a chat or undefined
   function matchChannelName(url) {
     if (!url) return undefined;
 
-    const match = url.match(
-      /^https?:\/\/(?:www\.)?twitch\.tv\/(\w+)\/?(?:\?.*)?$/,
-    );
+    let match;
+    for (var i in urlRegexps) {
+      match = url.match(
+        urlRegexps[i],
+      );
 
-    let channelName;
-    if (match && ((channelName = match[1]), !ignoredPages[channelName])) {
-      return channelName;
+      let channelName;
+      if (match && ((channelName = match[1]), !ignoredPages[channelName])) {
+        return channelName;
+      }
     }
 
     return undefined;
   }
 
+  let findAltTwitchChatDiv = () => document.getElementById('чат');
+  let findPopupChatDiv = () => document.getElementById('root');
   let findChatDiv = () => document.getElementsByClassName('chat-shell')[0];
   let findRightCollapse = () =>
     document.getElementsByClassName('right-column__toggle-visibility')[0]
@@ -91,12 +102,55 @@
       }
     }
 
+    // chat inside the popup
+    if (!installedObjects.rightColumn && !installedObjects.popupChat) {
+      let x = findPopupChatDiv();
+
+      window.chatDiv = x;
+
+      if (x != undefined && x.children.length >= 1) {
+        x.style.height = '100%';
+        x.innerHTML =
+          '<div style="width: 100%; height: 100%; justify-content: center; display: flex; flex-direction: column; text-align: center; color: #999; user-select: none; background: #222;"></div>';
+
+        errorDiv = x.children[0];
+        updateErrors();
+
+        installedObjects.popupChat = true;
+        retry = false;
+      } else {
+        retry = true;
+      }
+    }
+
+    // chat inside the popup
+    if (!installedObjects.rightColumn && !installedObjects.popupChat && !installedObjects.altTwitchChatIframe) {
+      let x = findAltTwitchChatDiv();
+
+      window.chatDiv = x;
+
+      if (x != undefined && x.children.length >= 1) {
+        x.style.height = '100%';
+        x.tagName = 'div';
+        x.innerHTML =
+          '<div id="чат" style="width: 321px; height: 100%; justify-content: center; display: flex; flex-direction: column; text-align: center; color: #999; user-select: none; background: #222;"></div>';
+
+        errorDiv = x.children[0];
+        updateErrors();
+
+        installedObjects.altTwitchChatIframe = true;
+        retry = false;
+      } else {
+        retry = true;
+      }
+    }
+
     // nav bar
     if (!installedObjects.topNav) {
       let x = findNavBar();
 
       if (x === undefined) {
-        retry = true;
+        retry = !installedObjects.popupChat;
       } else {
         x.addEventListener('mouseup', () => {
           if (findChatDiv() && findChatDiv().clientWidth != 0) {
@@ -156,12 +210,23 @@
     }
 
     let element = findChatDiv();
+    let elementPopup = findPopupChatDiv();
+    let elementAltTwitchChat = findAltTwitchChatDiv();
 
-    if (element === undefined) {
+    if (
+      element === undefined
+      && elementPopup === undefined
+      && elementAltTwitchChat === undefined
+    ) {
       return;
     }
 
-    let rect = element.getBoundingClientRect();
+    let rect = element
+      ? element.getBoundingClientRect()
+      : (elementPopup
+          ? elementPopup.getBoundingClientRect()
+          : elementAltTwitchChat.getBoundingClientRect()
+        );
 
     /* if (
       lastRect.left == rect.left &&
@@ -172,13 +237,19 @@
       // log("skipped sending message");
       return;
     } */
+
     lastRect = rect;
 
     let data = {
+      side: 'left',
       type: 'chat-resized',
       rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
       dpr: window.devicePixelRatio,
     };
+
+    if (elementPopup && window.top !== window.self) {
+      data.side = 'right';
+    }
 
     isCollapsed = rect.width == 0;
 
