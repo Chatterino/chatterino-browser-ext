@@ -26,8 +26,7 @@
     {
       "run_at": "document_end",
       "matches": ["https://www.twitch.tv/*"],
-      "js": ["inject.js"],
-      "all_frames": true
+      "js": ["inject.js"]
     }
   ]
 }
