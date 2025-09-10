@@ -17,7 +17,10 @@ const ignoredPages = new Set([
   'wallet',
 ]);
 
-let lastChatSize = {};
+// Stores chat message for tabs in which chat was already replaced.
+// Used to reattach chatterino when opening a twitch channel, switching tab and then switching back.
+/** @type {Map<string, object>} */
+const tabAttachMessages = new Map();
 
 class AttachedWindows {
   /** @param {number} winID */
@@ -91,23 +94,14 @@ const settings = (() => {
   };
 })();
 
-const urlRegexps = [
-  /^https?:\/\/(?:www\.)?twitch\.tv\/(\w+)\/?(?:\?.*)?$/,
-  /^https?:\/\/(?:www\.)?twitch\.tv\/popout\/(\w+)\/chat\/?(?:\?.*)?$/,
-  /^moz-extension:\/\/[a-zA-Z0-9-]+\/player\.html\?channel=(\w+)$/,
-];
-
-// return channel name if it should contain a chat or undefined
 function matchChannelName(url) {
   if (!url) return undefined;
 
-  for (var i in urlRegexps) {
-    const [, channelName] =
-      url.match(urlRegexps[i]) ?? [];
+  const [, channelName] =
+    url.match(/^https?:\/\/(?:www\.)?twitch\.tv\/(?:popout\/)?([\w]+)(?:\/chat)?\/?(?:\?.*)?$/) ?? [];
 
-    if (channelName && !ignoredPages.has(channelName)) {
-      return channelName;
-    }
+  if (channelName && !ignoredPages.has(channelName)) {
+    return channelName;
   }
 
   return undefined;
@@ -201,6 +195,14 @@ chrome.tabs.onDetached.addListener(async (tabId, detachInfo) => {
   await tryDetach(detachInfo.oldWindowId);
 });
 
+// tab removed
+chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
+  if (debugCalls) console.log('tabs.onRemoved', removeInfo);
+
+  // Remove chat attach message when closing the tab.
+  tabAttachMessages.delete(tabId);
+});
+
 // tab closed
 chrome.windows.onRemoved.addListener(async windowId => {
   if (debugCalls) console.log('onRemoved');
@@ -235,8 +237,8 @@ async function onTabSelected(url, tab) {
   if (!channelName) {
     // detach from window
     await tryDetach(tab.windowId);
-  } else if (tab.windowId in lastChatSize) {
-    sendAttach(tab, lastChatSize[tab.windowId]);
+  } else if (tabAttachMessages.has(tab.id)) {
+    sendAttach(tab, tabAttachMessages.get(tab.id));
   }
 }
 
@@ -346,14 +348,15 @@ function sendAttach(tab, message) {
   chrome.windows.get(tab.windowId, {}, async window => {
     if (!window.focused) return;
 
-    lastChatSize[tab.windowId] = message;
+    // Store the message for reattaching when switching tabs.
+    tabAttachMessages.set(tab.id, message);
 
     // adjust for vertical tabs
     let xOffset = 0;
     // only Firefox has "browser"
     if ('browser' in self) {
       // assume that any UI from the browser will always be on the left
-      xOffset = message.side === 'left' ? window.width - tab.width : window.width - message.rect.width;
+      xOffset = window.width - tab.width;
       // (Windows only)
       // Firefox on Windows has -8px(!) insets even when not minimized
       // (I don't know why). On Windows, only maximized windows have these
