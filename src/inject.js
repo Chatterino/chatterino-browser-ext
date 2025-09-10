@@ -112,28 +112,6 @@
       }
     }
 
-    // chat inside the popup
-    // if (!installedObjects.rightColumn && !installedObjects.popupChat && !installedObjects.altTwitchChatIframe) {
-    //   let x = findAltTwitchChatDiv();
-
-    //   window.chatDiv = x;
-
-    //   if (x != undefined && x.children.length >= 1) {
-    //     x.style.height = '100%';
-    //     x.tagName = 'div';
-    //     x.innerHTML =
-    //       '<div id="чат" style="width: 321px; height: 100%; justify-content: center; display: flex; flex-direction: column; text-align: center; color: #999; user-select: none; background: #222;"></div>';
-
-    //     errorDiv = x.children[0];
-    //     updateErrors();
-
-    //     installedObjects.altTwitchChatIframe = true;
-    //     retry = false;
-    //   } else {
-    //     retry = true;
-    //   }
-    // }
-
     // nav bar
     if (!installedObjects.topNav) {
       let x = findNavBar();
