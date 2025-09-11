@@ -17,11 +17,6 @@ const ignoredPages = new Set([
   'wallet',
 ]);
 
-// Stores chat message for tabs in which chat was already replaced.
-// Used to reattach chatterino when opening a twitch channel, switching tab and then switching back.
-/** @type {Map<string, object>} */
-const tabAttachMessages = new Map();
-
 class AttachedWindows {
   /** @param {number} winID */
   static async isAttached(winID) {
@@ -94,6 +89,7 @@ const settings = (() => {
   };
 })();
 
+/// return channel name if it should contain a chat
 function matchChannelName(url) {
   if (!url) return undefined;
 
@@ -195,14 +191,6 @@ chrome.tabs.onDetached.addListener(async (tabId, detachInfo) => {
   await tryDetach(detachInfo.oldWindowId);
 });
 
-// tab removed
-chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
-  if (debugCalls) console.log('tabs.onRemoved', removeInfo);
-
-  // Remove chat attach message when closing the tab.
-  tabAttachMessages.delete(tabId);
-});
-
 // tab closed
 chrome.windows.onRemoved.addListener(async windowId => {
   if (debugCalls) console.log('onRemoved');
@@ -237,8 +225,6 @@ async function onTabSelected(url, tab) {
   if (!channelName) {
     // detach from window
     await tryDetach(tab.windowId);
-  } else if (tabAttachMessages.has(tab.id)) {
-    sendAttach(tab, tabAttachMessages.get(tab.id));
   }
 }
 
@@ -268,6 +254,7 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
       // after this function returns. This behavior is documented here:
       // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/runtime/onMessage
       return true;
+      break;
     case 'location-updated':
       chrome.windows.get(sender.tab.windowId, {}, window => {
         if (!window.focused) return;
@@ -291,7 +278,40 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
       if (!sender.tab.highlighted) return;
 
       // is window focused
-      sendAttach(sender.tab, message);
+      chrome.windows.get(sender.tab.windowId, {}, async window => {
+        if (!window.focused) return;
+
+        // adjust for vertical tabs
+        let xOffset = 0;
+        // only Firefox has "browser"
+        if ('browser' in self) {
+          // assume that any UI from the browser will always be on the left
+          xOffset = window.width - sender.tab.width;
+          // (Windows only)
+          // Firefox on Windows has -8px(!) insets even when not minimized
+          // (I don't know why). On Windows, only maximized windows have these
+          // insets. To get to the "visible" x-offset, we thus need to subtract
+          // 8px. We account for this in Chatterino already so we need to
+          // counter this. We subtract 8px + 8px - 2px = 14px. The browser
+          // units are in DIP, so we need to divide by the DPR.
+          xOffset -= Math.round(14 / (message.dpr ?? 1));
+        }
+
+        // get zoom value
+        const zoom = await chrome.tabs.getZoom(sender.tab.id);
+        let size = {
+          x: message.rect.x * zoom + xOffset,
+          pixelRatio: 1,
+          width: Math.floor(message.rect.width * zoom),
+          height: Math.floor(message.rect.height * zoom),
+        };
+
+        // attach to window
+        await tryAttach(sender.tab.windowId, window.state == 'fullscreen', {
+          name: matchChannelName(sender.tab.url),
+          size: size,
+        });
+      });
       break;
     case 'detach':
       tryDetach(sender.tab.windowId);
@@ -342,46 +362,6 @@ function sendDetach(winID) {
   if (port) {
     port.postMessage({ action: 'detach', version: 0, winId: winID.toString() });
   }
-}
-
-function sendAttach(tab, message) {
-  chrome.windows.get(tab.windowId, {}, async window => {
-    if (!window.focused) return;
-
-    // Store the message for reattaching when switching tabs.
-    tabAttachMessages.set(tab.id, message);
-
-    // adjust for vertical tabs
-    let xOffset = 0;
-    // only Firefox has "browser"
-    if ('browser' in self) {
-      // assume that any UI from the browser will always be on the left
-      xOffset = window.width - tab.width;
-      // (Windows only)
-      // Firefox on Windows has -8px(!) insets even when not minimized
-      // (I don't know why). On Windows, only maximized windows have these
-      // insets. To get to the "visible" x-offset, we thus need to subtract
-      // 8px. We account for this in Chatterino already so we need to
-      // counter this. We subtract 8px + 8px - 2px = 14px. The browser
-      // units are in DIP, so we need to divide by the DPR.
-      xOffset -= Math.round(14 / (message.dpr ?? 1));
-    }
-
-    // get zoom value
-    const zoom = await chrome.tabs.getZoom(tab.id);
-    let size = {
-      x: message.rect.x * zoom + xOffset,
-      pixelRatio: 1,
-      width: Math.floor(message.rect.width * zoom),
-      height: Math.floor(message.rect.height * zoom),
-    };
-
-    // attach to window
-    await tryAttach(tab.windowId, window.state == 'fullscreen', {
-      name: matchChannelName(tab.url),
-      size: size,
-    });
-  });
 }
 
 function updateBadge() {
