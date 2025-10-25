@@ -228,6 +228,29 @@ async function onTabSelected(url, tab) {
   }
 }
 
+function isFirefox() {
+  // Only Firefox has browser.*
+  return typeof browser !== 'undefined';
+}
+
+async function calcDisplayScaleFactor(tabId, dpr) {
+  const zoom = await chrome.tabs.getZoom(tabId);
+  let scaleFactor = dpr / zoom;
+  // On Firefox devicePixelRatio is not just zoom * scaleFactor. There seems to
+  // be some additional multiplier, which makes sure, that dimensions of the
+  // CSS pixel grid are exact integers (ex. with 175% scaling on 1080p dpr is
+  // 1.7647).
+  //
+  // To workaround that, we will assume, that display scaling is set to a
+  // multiple of 25%, which is recommend in Windows, and round to that. This
+  // will allow us to get the _actual_ zoom level later with that multiplier
+  // included, which lines up everything nicely.
+  if (isFirefox()) {
+    scaleFactor = Math.round(scaleFactor / 0.25) * 0.25;
+  }
+  return scaleFactor;
+}
+
 // receiving messages from the inject script
 chrome.runtime.onMessage.addListener((message, sender, callback) => {
   console.log(message);
@@ -281,24 +304,14 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
       chrome.windows.get(sender.tab.windowId, {}, async window => {
         if (!window.focused) return;
 
-        // adjust for vertical tabs
-        let xOffset = 0;
-        // only Firefox has "browser"
-        if ('browser' in self) {
-          // assume that any UI from the browser will always be on the left
-          xOffset = window.width - sender.tab.width;
-          // (Windows only)
-          // Firefox on Windows has -8px(!) insets even when not minimized
-          // (I don't know why). On Windows, only maximized windows have these
-          // insets. To get to the "visible" x-offset, we thus need to subtract
-          // 8px. We account for this in Chatterino already so we need to
-          // counter this. We subtract 8px + 8px - 2px = 14px. The browser
-          // units are in DIP, so we need to divide by the DPR.
-          xOffset -= Math.round(14 / (message.dpr ?? 1));
-        }
-
-        // get zoom value
-        const zoom = await chrome.tabs.getZoom(sender.tab.id);
+        const dpr = message.dpr ?? 1;
+        // devicePixelRatio combines both zoom and display scaling set in the
+        // system. But the UI elements (sidebars) are unaffected by the zoom
+        // level of the tab itself. So we need to separate the two.
+        const scaleFactor = await calcDisplayScaleFactor(sender.tab.id, dpr);
+        const zoom = dpr / scaleFactor;
+        // adjust for sidebars and vertical tabs
+        let xOffset = (message.viewportX ?? 0) / scaleFactor;
         let size = {
           x: message.rect.x * zoom + xOffset,
           pixelRatio: 1,
