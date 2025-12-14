@@ -1,17 +1,20 @@
-chrome.runtime.sendMessage({ type: 'get-settings' }, settings_ => {
-  // replace twitch chat setting
-  let item = document.querySelector('#replace-twitch');
+async function refreshSettings() {
+  const replaceTwitchChat = await chrome.runtime.sendMessage({
+    type: 'get-setting',
+    key: 'replaceTwitchChat',
+  });
+  document.querySelector('#replace-twitch').checked = replaceTwitchChat;
+}
 
-  item.checked = settings_.replaceTwitchChat;
-
-  item.onchange = e => {
-    chrome.runtime.sendMessage({
-      type: 'set-setting',
-      key: 'replaceTwitchChat',
-      value: item.checked,
-    });
-  };
-});
+document.querySelector('#replace-twitch').onchange = () => {
+  chrome.runtime.sendMessage({
+    type: 'set-setting',
+    key: 'replaceTwitchChat',
+    value: document.querySelector('#replace-twitch').checked,
+  });
+};
+refreshSettings();
+chrome.storage.local.onChanged.addListener(refreshSettings);
 
 const platform = await chrome.runtime.getPlatformInfo();
 if (platform.os === 'win') {

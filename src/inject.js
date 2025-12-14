@@ -228,12 +228,15 @@
   log('hello there in the dev tools 👋');
 
   try {
-    chrome.runtime.sendMessage({ type: 'get-settings' }, settings_ => {
-      log(settings_);
+    chrome.runtime.sendMessage(
+      { type: 'get-setting', key: 'replaceTwitchChat' },
+      replaceTwitchChat => {
+        log({ replaceTwitchChat });
 
-      settings = settings_;
-      installChatterino();
-    });
+        settings = { replaceTwitchChat };
+        installChatterino();
+      },
+    );
   } catch {
     errors.sendMessage = true;
     updateErrors();
