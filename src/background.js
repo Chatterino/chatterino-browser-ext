@@ -61,33 +61,61 @@ class AttachedWindows {
 
 const debugCalls = true;
 
-const settings = (() => {
-  const map = { replaceTwitchChat: false };
+/**
+ * @typedef {{
+ *    replaceTwitchChat: boolean
+ * }} SettingTypes
+ */
 
-  // load settings
-  (async () => {
-    const platform = await chrome.runtime.getPlatformInfo();
-    map.replaceTwitchChat = platform.os === 'win';
-
-    const saved = await chrome.storage.local.get(Object.keys(map));
-    for (const key of Object.keys(map)) {
-      if (saved[key] !== undefined) {
-        map[key] = saved[key];
-      }
-    }
-    updateBadge();
-  })();
-
-  return {
-    set: (key, value) => {
-      let obj = {};
-      obj[key] = value;
-      chrome.storage.local.set(obj);
-      map[key] = value;
+class Settings {
+  static #defaults = {
+    replaceTwitchChat: async () => {
+      const platform = await chrome.runtime.getPlatformInfo();
+      return platform.os === 'win';
     },
-    all: () => map,
   };
-})();
+
+  /**
+   * @template {keyof SettingTypes} T
+   * @param {T} key
+   * @returns {Promise<SettingTypes[T]>}
+   */
+  static async get(key) {
+    const maybeVal = await this.#getOrUndefined(key);
+    if (maybeVal === undefined) {
+      return await this.#defaults[key]();
+    }
+    return maybeVal;
+  }
+
+  /**
+   * @template {keyof SettingTypes} T
+   * @param {T} key
+   * @returns {Promise<SettingTypes[T] | undefined>}
+   */
+  static async #getOrUndefined(key) {
+    try {
+      const settings = await chrome.storage.local.get(key);
+      return settings[key];
+    } catch (e) {
+      console.warn(`Failed to get ${key}`, e);
+    }
+    return undefined;
+  }
+
+  /**
+   * @template {keyof SettingTypes} T
+   * @param {T} key
+   * @param {SettingTypes[T]} value
+   */
+  static async set(key, value) {
+    try {
+      await chrome.storage.local.set({ [key]: value });
+    } catch (e) {
+      console.warn(`Failed to set {key} to`, value);
+    }
+  }
+}
 
 /// return channel name if it should contain a chat
 function matchChannelName(url) {
@@ -233,18 +261,18 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
   console.log(message);
 
   switch (message.type) {
-    case 'get-settings':
-      callback(settings.all());
-      break;
+    case 'get-setting':
+      Settings.get(message.key).then(callback);
+      return true;
     case 'set-setting':
       (async () => {
-        settings.set(message.key, message.value);
+        await Settings.set(message.key, message.value);
 
         for (const id of await AttachedWindows.detachAll()) {
           // they're already cleared
           await sendDetach(id);
         }
-        updateBadge();
+        await updateBadge();
       })();
       break;
     case 'get-os':
@@ -324,7 +352,7 @@ async function tryAttach(windowId, fullscreen, data) {
   console.log('tryAttach ' + windowId);
 
   data.action = 'select';
-  if (settings.all().replaceTwitchChat) {
+  if (await Settings.get('replaceTwitchChat')) {
     if (fullscreen) {
       data.attach_fullscreen = true;
     } else {
@@ -364,9 +392,9 @@ function sendDetach(winID) {
   }
 }
 
-function updateBadge() {
+async function updateBadge() {
   chrome.action.setBadgeText({
-    text: settings.all().replaceTwitchChat ? '' : 'off',
+    text: (await Settings.get('replaceTwitchChat')) ? '' : 'off',
   });
 }
 
