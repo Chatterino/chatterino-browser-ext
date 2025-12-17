@@ -122,7 +122,7 @@ function matchChannelName(url) {
   if (!url) return undefined;
 
   const [, channelName] =
-    url.match(/^https?:\/\/(?:www\.)?twitch\.tv\/(\w+)\/?(?:\?.*)?$/) ?? [];
+    url.match(/^https?:\/\/(?:www\.)?twitch\.tv\/(?:popout\/)?([\w]+)(?:\/chat)?\/?(?:\?.*)?$/) ?? [];
 
   if (channelName && !ignoredPages.has(channelName)) {
     return channelName;
