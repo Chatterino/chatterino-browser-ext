@@ -144,6 +144,42 @@
     queryChatRect();
   }
 
+  // X is relative to the window in display pixels
+  function calcViewportX() {
+    // Sidebars on the left can offset the viewport relative to the window
+    // There is no good way to calculate that, but on Firefox we could query
+    // mozInnerScreenX to calculate that.
+    //
+    // See https://github.com/w3c/csswg-drafts/issues/809
+    if ('mozInnerScreenX' in window) {
+      let x =
+        window.devicePixelRatio * (window.mozInnerScreenX - window.screenX);
+      // (Windows only)
+      // Firefox on Windows has -8px(!) insets even when not maximized
+      // (I don't know why). On Windows, only maximized windows have these
+      // insets. To get to the "visible" x-offset, we thus need to subtract
+      // 8px. We account for this in Chatterino already so we need to
+      // counter this. So we will just subtract 8px here.
+      //
+      // This is not needed in fullscreen. If you go fullscreen, then the
+      // `mozInnerScreenX` and `screenX` seem to differ exactly in the sidebar
+      // size, no inset.
+      //
+      // As for the non-fullscreen case... With no scaling, zoom or sidebars
+      // calculated `x` seems to be exactly 8, so it matches the fullscreen
+      // case in the end.
+      //
+      // But when you add display scaling, everything starts drifting... With
+      // 150% scaling `x` will be one of: 10.5, 11, 11.5 - depending on the
+      // position of the window. Nonetheless, with -8px it still looks fine.
+      if (!window.fullScreen) {
+        x -= 8;
+      }
+      return Math.round(x);
+    }
+    return 0;
+  }
+
   // query the rect of the chat
   function queryChatRect() {
     if (!showingChat) {
@@ -178,6 +214,7 @@
       type: 'chat-resized',
       rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
       dpr: window.devicePixelRatio,
+      viewportX: calcViewportX(),
     };
 
     isCollapsed = rect.width == 0;
