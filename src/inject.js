@@ -23,12 +23,11 @@
 
   let errors = {};
 
-  // return channel name if it should contain a chat or undefined
   function matchChannelName(url) {
     if (!url) return undefined;
 
     const match = url.match(
-      /^https?:\/\/(?:www\.)?twitch\.tv\/(\w+)\/?(?:\?.*)?$/,
+      /^https?:\/\/(?:www\.)?twitch\.tv\/(?:popout\/)?([\w]+)(?:\/chat)?\/?(?:\?.*)?$/,
     );
 
     let channelName;
@@ -39,6 +38,7 @@
     return undefined;
   }
 
+  let findPopupChatDiv = () => document.getElementById('root');
   let findChatDiv = () => document.getElementsByClassName('chat-shell')[0];
   let findRightCollapse = () =>
     document.getElementsByClassName('right-column__toggle-visibility')[0]
@@ -91,12 +91,33 @@
       }
     }
 
+    // chat inside the popup
+    if (!installedObjects.rightColumn && !installedObjects.popupChat) {
+      let x = findPopupChatDiv();
+
+      window.chatDiv = x;
+
+      if (x != undefined && x.children.length >= 1) {
+        x.style.height = '100%';
+        x.innerHTML =
+          '<div style="width: 100%; height: 100%; justify-content: center; display: flex; flex-direction: column; text-align: center; color: #999; user-select: none; background: #222;"></div>';
+
+        errorDiv = x.children[0];
+        updateErrors();
+
+        installedObjects.popupChat = true;
+        retry = false;
+      } else {
+        retry = true;
+      }
+    }
+
     // nav bar
     if (!installedObjects.topNav) {
       let x = findNavBar();
 
       if (x === undefined) {
-        retry = true;
+        retry = !installedObjects.popupChat;
       } else {
         x.addEventListener('mouseup', () => {
           if (findChatDiv() && findChatDiv().clientWidth != 0) {
@@ -192,12 +213,18 @@
     }
 
     let element = findChatDiv();
+    let elementPopup = findPopupChatDiv();
 
-    if (element === undefined) {
+    if (
+      element === undefined
+      && elementPopup === undefined
+    ) {
       return;
     }
 
-    let rect = element.getBoundingClientRect();
+    let rect = element
+      ? element.getBoundingClientRect()
+      : elementPopup.getBoundingClientRect();
 
     /* if (
       lastRect.left == rect.left &&
@@ -208,6 +235,7 @@
       // log("skipped sending message");
       return;
     } */
+
     lastRect = rect;
 
     let data = {
