@@ -112,7 +112,7 @@ class Settings {
     try {
       await chrome.storage.local.set({ [key]: value });
     } catch (e) {
-      console.warn(`Failed to set {key} to`, value);
+      console.warn(`Failed to set ${key} to`, value, e);
     }
   }
 }
@@ -132,6 +132,7 @@ function matchChannelName(url) {
 }
 
 const appName = 'com.chatterino.chatterino';
+/** @type {chrome.runtime.Port|null} */
 let port = null;
 
 // gets the port for communication with chatterino
@@ -149,7 +150,7 @@ function getPort() {
 // connect to port
 function connectPort() {
   port = chrome.runtime.connectNative(appName);
-  console.debug('port connected');
+  console.debug('Port connected');
 
   port.onMessage.addListener(msg => {
     if (typeof msg === 'object' && msg.type === 'status') {
@@ -160,16 +161,19 @@ function connectPort() {
           );
           break;
         default:
-          console.log(msg);
+          console.log(
+            `port.onMessage(): Unknown status '${msg.status}', msg:`,
+            msg,
+          );
           break;
       }
     } else {
-      console.log(msg);
+      console.log('port.onMessage(): Unexpected message:', msg);
     }
   });
   port.onDisconnect.addListener(e => {
     console.debug(
-      'port disconnected',
+      'Port disconnected',
       e?.error ?? e ?? chrome.runtime.lastError,
     );
 
@@ -177,13 +181,11 @@ function connectPort() {
   });
 }
 
-// disconnect from port
-function disconnectPort() {
-  if (debugCalls) console.log('disconnectPort');
-
+function sendNativeMessage(msg) {
+  const port = getPort();
   if (port) {
-    port.disconnect();
-    port = null;
+    console.debug(`sendNativeMessage()`, msg);
+    port.postMessage(msg);
   }
 }
 
@@ -195,41 +197,41 @@ chrome.tabs.onActivated.addListener(async activeInfo => {
   const window = await chrome.windows.get(tab.windowId, {});
   if (!window.focused) return;
 
-  if (debugCalls) console.log('onActivated');
+  if (debugCalls) console.log(`tabs.onActivated(tabId=${activeInfo.tabId})`);
 
   await onTabSelected(tab.url, tab);
 });
 
 // url changed
-chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+chrome.tabs.onUpdated.addListener(async (tabId, _changeInfo, tab) => {
   if (!tab.highlighted) return;
 
   const window = await chrome.windows.get(tab.windowId, {});
   if (!window.focused) return;
 
-  if (debugCalls) console.log('onUpdated');
+  if (debugCalls) console.log(`tabs.onUpdated(tabId=${tabId})`);
 
   onTabSelected(tab.url, tab);
 });
 
 // tab detached
 chrome.tabs.onDetached.addListener(async (tabId, detachInfo) => {
-  if (debugCalls) console.log('onDetached');
+  if (debugCalls) console.log(`tabs.onDetached(tabId=${tabId})`);
 
   await tryDetach(detachInfo.oldWindowId);
 });
 
 // tab closed
 chrome.windows.onRemoved.addListener(async windowId => {
-  if (debugCalls) console.log('onRemoved');
+  if (debugCalls) console.log(`windows.onRemoved(windowId=${windowId})`);
 
   await tryDetach(windowId);
 });
 
 // window selected
 chrome.windows.onFocusChanged.addListener(async windowId => {
-  console.log(windowId);
-  if (windowId == -1) return;
+  console.log(`windows.onFocusChanged(windowId=${windowId})`);
+  if (windowId === -1) return;
 
   // this returns all tabs when the query fails
   const tabs = await chrome.tabs.query({
@@ -237,12 +239,7 @@ chrome.windows.onFocusChanged.addListener(async windowId => {
     highlighted: true,
   });
   if (tabs.length === 1) {
-    let tab = tabs[0];
-
-    const window = await chrome.windows.get(tab.windowId);
-    if (debugCalls) console.log('onFocusChanged');
-
-    await onTabSelected(tab.url, tab);
+    await onTabSelected(tab.url, tabs[0]);
   }
 });
 
@@ -281,7 +278,7 @@ async function calcDisplayScaleFactor(tabId, dpr) {
 
 // receiving messages from the inject script
 chrome.runtime.onMessage.addListener((message, sender, callback) => {
-  console.log(message);
+  console.log('runtime.onMessage()', message);
 
   switch (message.type) {
     case 'get-setting':
@@ -310,18 +307,13 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
       chrome.windows.get(sender.tab.windowId, {}, window => {
         if (!window.focused) return;
 
-        let data = {
+        sendNativeMessage({
           action: 'select',
           type: 'twitch',
           winId: sender.tab.windowId,
           version: 0,
           name: matchChannelName(sender.tab.url),
-        };
-        let port = getPort();
-
-        if (port) {
-          port.postMessage(data);
-        }
+        });
       });
       break;
     case 'chat-resized':
@@ -348,7 +340,7 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
         };
 
         // attach to window
-        await tryAttach(sender.tab.windowId, window.state == 'fullscreen', {
+        await tryAttach(sender.tab.windowId, window.state === 'fullscreen', {
           name: matchChannelName(sender.tab.url),
           size: size,
         });
@@ -362,7 +354,7 @@ chrome.runtime.onMessage.addListener((message, sender, callback) => {
 
 // attach chatterino to a chrome window
 async function tryAttach(windowId, fullscreen, data) {
-  console.log('tryAttach ' + windowId);
+  console.log(`tryAttach(windowId=${windowId}, fullscreen=${fullscreen})`);
 
   data.action = 'select';
   if (await Settings.get('replaceTwitchChat')) {
@@ -376,11 +368,7 @@ async function tryAttach(windowId, fullscreen, data) {
   data.winId = '' + windowId;
   data.version = 0;
 
-  let port = getPort();
-
-  if (port) {
-    port.postMessage(data);
-  }
+  sendNativeMessage(data);
 
   await AttachedWindows.markAttached(windowId);
 }
@@ -397,12 +385,9 @@ async function tryDetach(windowId) {
 }
 
 function sendDetach(winID) {
-  console.log('sendDetach', { winID });
+  console.log(`sendDetach(winID=${winID})`);
 
-  const port = getPort();
-  if (port) {
-    port.postMessage({ action: 'detach', version: 0, winId: winID.toString() });
-  }
+  sendNativeMessage({ action: 'detach', version: 0, winId: winID.toString() });
 }
 
 async function updateBadge() {
@@ -446,12 +431,9 @@ async function syncTabs() {
     return;
   }
   previousTabs = currentTabs;
-  console.log('sending updated tabs:', currentTabs);
+  console.log('syncTabs(): sending updated tabs:', currentTabs);
 
-  const port = getPort();
-  if (port) {
-    port.postMessage({ action: 'sync', twitchChannels: [...currentTabs] });
-  }
+  sendNativeMessage({ action: 'sync', twitchChannels: [...currentTabs] });
 
   await setPreviousTabs(previousTabs);
 }
